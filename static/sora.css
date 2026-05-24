@@ -381,7 +381,20 @@ input, select, textarea { font-family: inherit; }
   width: 100%;
   height: 720px;
   user-select: none;
+  transition: opacity 200ms ease-out;
 }
+#sora-hub.is-transitioning { opacity: 0.15; }
+
+/* Focus-mode interactive elements */
+.hub-company-clickable { cursor: pointer; }
+.hub-other-company    { cursor: pointer; transition: opacity 0.2s; }
+.hub-other-company:hover circle { opacity: 1 !important; stroke-width: 2.6; }
+.hub-back             { cursor: pointer; }
+.hub-back:hover rect  { fill: #f0f9ff; }
+.hub-focused-core     { cursor: pointer; }
+.hub-focused-core:hover circle:nth-of-type(3) { stroke-width: 4; }
+.hub-project.hub-project-large { cursor: pointer; transition: transform 0.18s; }
+.hub-project.hub-project-large:hover { transform: scale(1.08); transform-origin: center; }
 
 /* Center hub */
 .hub-core-shell  { fill: rgba(14,165,233,0.06); }
