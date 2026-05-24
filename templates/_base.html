@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#e0f2fe">
+  <title>{% block title %}Sora{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='sora.css') }}">
+</head>
+<body>
+  <header class="sora-topbar">
+    <a href="/" class="sora-brand">
+      <span class="sora-mark">S</span>
+      <span>
+        <span class="sora-name">Sora</span>
+        <span class="sora-tag">portfolio brain</span>
+      </span>
+    </a>
+    <nav class="sora-topnav">
+      <a href="/"      class="sora-navlink {% if active=='dashboard' %}is-active{% endif %}">Hub</a>
+      <a href="/frame" class="sora-navlink {% if active=='frame'     %}is-active{% endif %}">Frame</a>
+    </nav>
+    <div class="sora-clock" id="sora-clock"></div>
+  </header>
+
+  <main class="sora-main">
+    {% block content %}{% endblock %}
+  </main>
+
+  <script>
+    (function(){
+      var el = document.getElementById('sora-clock');
+      function tick(){
+        if(!el) return;
+        var d = new Date();
+        var pad = function(n){ return String(n).padStart(2,'0'); };
+        el.textContent = pad(d.getHours()) + ':' + pad(d.getMinutes());
+      }
+      tick(); setInterval(tick, 30000);
+    })();
+  </script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,331 @@
+{% extends "_base.html" %}
+{% set active = 'frame' %}
+{% block title %}Sora · Frame{% endblock %}
+
+{% block content %}
+<div class="frame-shell">
+  <!-- ── Sidebar ──────────────────────────────────────────── -->
+  <aside class="frame-side">
+    <div class="frame-side-head">
+      <div class="frame-side-eyebrow">Live tools</div>
+      <div class="frame-side-count">{{ framed|length }} mounted</div>
+    </div>
+
+    <div class="frame-side-list">
+      {% for company in companies %}
+        {% set projs = by_company.get(company.id, []) %}
+        {% if projs %}
+          <div class="frame-group" style="--c: {{ company.color }};">
+            <div class="frame-group-name">
+              <span class="frame-group-dot"></span>{{ company.name }}
+            </div>
+            {% for p in projs %}
+              <a class="frame-item {% if selected and selected.id == p.id %}is-active{% endif %}"
+                 href="/frame?p={{ p.id }}"
+                 data-pid="{{ p.id }}"
+                 data-url="{{ p.url }}"
+                 onclick="event.preventDefault(); Frame.load('{{ p.id }}', this.dataset.url, '{{ p.name }}')">
+                <span class="frame-item-row">
+                  <span class="frame-item-name">{{ p.name }}</span>
+                  <span class="sora-badge s-{{ p.status }}" style="font-size: 8.5px; padding: 2px 7px;">{{ p.status }}</span>
+                </span>
+                <span class="frame-item-url">{{ p.url|replace('https://','')|replace('http://','') }}</span>
+              </a>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endfor %}
+
+      {# Orphans #}
+      {% set orphans = by_company.get(none, []) %}
+      {% if orphans %}
+        <div class="frame-group" style="--c: #94a3b8;">
+          <div class="frame-group-name"><span class="frame-group-dot"></span>Unassigned</div>
+          {% for p in orphans %}
+            <a class="frame-item {% if selected and selected.id == p.id %}is-active{% endif %}"
+               href="/frame?p={{ p.id }}"
+               data-pid="{{ p.id }}"
+               data-url="{{ p.url }}"
+               onclick="event.preventDefault(); Frame.load('{{ p.id }}', this.dataset.url, '{{ p.name }}')">
+              <span class="frame-item-row">
+                <span class="frame-item-name">{{ p.name }}</span>
+                <span class="sora-badge s-{{ p.status }}" style="font-size: 8.5px; padding: 2px 7px;">{{ p.status }}</span>
+              </span>
+              <span class="frame-item-url">{{ p.url|replace('https://','')|replace('http://','') }}</span>
+            </a>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      {% if not framed %}
+        <div class="sora-empty" style="padding: 24px;">
+          No projects with URLs yet. Add a URL on any project page and it&rsquo;ll show up here.
+        </div>
+      {% endif %}
+    </div>
+  </aside>
+
+  <!-- ── Stage ────────────────────────────────────────────── -->
+  <section class="frame-stage">
+    <header class="frame-stage-bar">
+      <div class="frame-stage-meta">
+        <span class="frame-stage-label">Now showing</span>
+        <span class="frame-stage-name" id="frame-name">
+          {{ selected.name if selected else '—' }}
+        </span>
+      </div>
+      <div class="frame-stage-actions">
+        <span class="frame-stage-url" id="frame-url">
+          {% if selected and selected.url %}{{ selected.url }}{% endif %}
+        </span>
+        <button class="btn btn-sm" onclick="Frame.reload()">⟳ Reload</button>
+        <a class="btn btn-sm btn-primary"
+           id="frame-open"
+           href="{{ selected.url if selected else '#' }}"
+           target="_blank" rel="noopener">Open ↗</a>
+      </div>
+    </header>
+
+    <div class="frame-stage-body">
+      {% if selected and selected.url %}
+        <iframe id="frame-iframe"
+                src="{{ selected.url }}"
+                title="{{ selected.name }}"
+                referrerpolicy="no-referrer-when-downgrade"
+                allow="clipboard-read; clipboard-write; fullscreen">
+        </iframe>
+      {% else %}
+        <div class="frame-empty">
+          <div class="frame-empty-mark">⊙</div>
+          <div class="frame-empty-title">Nothing mounted</div>
+          <div class="frame-empty-sub">Pick a tool from the sidebar to load it here.</div>
+        </div>
+      {% endif %}
+    </div>
+  </section>
+</div>
+
+<style>
+/* ── Frame-page-only styles (scoped) ─────────────────────── */
+.sora-main { max-width: none; padding: 0; }
+
+.frame-shell {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 0;
+  height: calc(100vh - 74px);  /* topbar height */
+  width: 100%;
+  position: relative;
+  z-index: 1;
+}
+
+.frame-side {
+  border-right: 1px solid var(--edge-soft);
+  background: rgba(255,255,255,0.65);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  display: flex; flex-direction: column;
+  overflow: hidden;
+}
+.frame-side-head {
+  display: flex; align-items: baseline; justify-content: space-between;
+  padding: 22px 22px 14px;
+  border-bottom: 1px solid var(--edge-soft);
+}
+.frame-side-eyebrow {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px; letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--accent-strong);
+  font-weight: 600;
+}
+.frame-side-count {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px; letter-spacing: 0.18em;
+  color: var(--ink-mute);
+}
+.frame-side-list { flex: 1; overflow-y: auto; padding: 12px 12px 24px; }
+
+.frame-group { margin-bottom: 18px; }
+.frame-group-name {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 12px 6px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 600; font-size: 11px;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--ink-dim);
+}
+.frame-group-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--c, var(--sky-5));
+  box-shadow: 0 0 6px var(--c, var(--sky-5));
+}
+.frame-item {
+  display: block;
+  padding: 10px 12px;
+  border-radius: 11px;
+  text-decoration: none;
+  color: var(--ink-dim);
+  transition: all 0.15s ease;
+  border: 1px solid transparent;
+}
+.frame-item:hover {
+  background: var(--sky-0);
+  border-color: var(--edge-soft);
+  color: var(--ink);
+}
+.frame-item.is-active {
+  background: var(--sky-1);
+  border-color: var(--sky-3);
+  color: var(--ink);
+}
+.frame-item-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+}
+.frame-item-name {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 600; font-size: 13.5px;
+  letter-spacing: -0.01em;
+}
+.frame-item-url {
+  display: block; margin-top: 3px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: var(--ink-low);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+.frame-stage {
+  display: flex; flex-direction: column;
+  background: var(--sky-0);
+  min-width: 0;
+}
+.frame-stage-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 14px;
+  padding: 12px 22px;
+  background: rgba(255,255,255,0.85);
+  border-bottom: 1px solid var(--edge-soft);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.frame-stage-meta { display: flex; align-items: baseline; gap: 14px; min-width: 0; }
+.frame-stage-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px; letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+}
+.frame-stage-name {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 600; font-size: 16px;
+  color: var(--ink);
+  letter-spacing: -0.015em;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  max-width: 40vw;
+}
+.frame-stage-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.frame-stage-url {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--ink-mute);
+  letter-spacing: 0.04em;
+  max-width: 360px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+.frame-stage-body {
+  flex: 1; position: relative;
+  background: white;
+  margin: 14px 18px 18px;
+  border-radius: 14px;
+  border: 1px solid var(--edge-soft);
+  overflow: hidden;
+  box-shadow: var(--shadow-2);
+}
+#frame-iframe {
+  width: 100%; height: 100%;
+  border: none;
+  display: block;
+  background: white;
+}
+
+.frame-empty {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  flex-direction: column; gap: 14px;
+  color: var(--ink-mute);
+  text-align: center;
+}
+.frame-empty-mark {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 64px;
+  color: var(--sky-3);
+  line-height: 1;
+}
+.frame-empty-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 600; font-size: 22px;
+  color: var(--ink);
+  letter-spacing: -0.02em;
+}
+.frame-empty-sub { font-size: 14px; }
+
+/* Responsive: on narrow screens, sidebar collapses to a top drawer */
+@media (max-width: 880px) {
+  .frame-shell { grid-template-columns: 1fr; height: auto; }
+  .frame-side {
+    border-right: none;
+    border-bottom: 1px solid var(--edge-soft);
+    max-height: 40vh;
+  }
+  .frame-stage-body { height: 70vh; margin: 12px; }
+  .frame-stage-url { display: none; }
+  .frame-stage-name { max-width: 60vw; }
+}
+</style>
+
+<script>
+window.Frame = {
+  load: function (pid, url, name) {
+    if (!url) return;
+    var iframe = document.getElementById('frame-iframe');
+    var nameEl = document.getElementById('frame-name');
+    var urlEl  = document.getElementById('frame-url');
+    var openEl = document.getElementById('frame-open');
+
+    // Highlight active item
+    document.querySelectorAll('.frame-item.is-active').forEach(function (el) {
+      el.classList.remove('is-active');
+    });
+    var active = document.querySelector('.frame-item[data-pid="' + pid + '"]');
+    if (active) active.classList.add('is-active');
+
+    // Swap iframe
+    if (iframe) { iframe.src = url; }
+    else {
+      // First load when there was nothing mounted before — rebuild
+      var body = document.querySelector('.frame-stage-body');
+      if (body) {
+        body.innerHTML = '<iframe id="frame-iframe" src="' + url + '" ' +
+          'allow="clipboard-read; clipboard-write; fullscreen" ' +
+          'referrerpolicy="no-referrer-when-downgrade"></iframe>';
+      }
+    }
+    if (nameEl) nameEl.textContent = name;
+    if (urlEl)  urlEl.textContent  = url;
+    if (openEl) openEl.href        = url;
+
+    // Update URL bar without reload so refreshing keeps the selection
+    if (history && history.replaceState) {
+      history.replaceState({}, '', '/frame?p=' + encodeURIComponent(pid));
+    }
+  },
+  reload: function () {
+    var iframe = document.getElementById('frame-iframe');
+    if (iframe) iframe.src = iframe.src;
+  }
+};
+</script>
+{% endblock %}

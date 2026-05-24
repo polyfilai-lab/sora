@@ -1,0 +1,159 @@
+{% extends "_base.html" %}
+{% block title %}Sora · {{ project.name }}{% endblock %}
+
+{% block content %}
+<a class="sora-back" href="/">← Back to hub</a>
+
+<div class="sora-detail">
+  <!-- LEFT ─────────────────────────────────────────────────── -->
+  <div class="sora-detail-card">
+    <div class="sora-company-eyebrow" style="margin-bottom: 14px;">
+      {% if project.company_id %}
+        {% for c in companies %}{% if c.id == project.company_id %}{{ c.name }}{% endif %}{% endfor %}
+      {% else %}Unassigned{% endif %}
+      · Project
+    </div>
+
+    <h1>{{ project.name }}</h1>
+    {% if project.tagline %}<div class="tag">{{ project.tagline }}</div>{% endif %}
+
+    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top: 8px;">
+      <span class="sora-badge s-{{ project.status }}">{{ project.status }}</span>
+      {% if project.url %}
+        <span style="font-family:'JetBrains Mono', monospace; font-size: 11.5px; letter-spacing: 0.12em;">
+          <span class="sora-ping-dot" data-ping="{{ project.url }}"></span>
+          <a href="{{ project.url }}" target="_blank" rel="noopener" style="color: var(--accent-strong);">{{ project.url }} ↗</a>
+        </span>
+      {% endif %}
+      <span style="flex:1;"></span>
+      <button class="btn btn-sm" onclick="Sora.editProject()">Edit</button>
+      <button class="btn btn-sm btn-danger" onclick="Sora.deleteProject()">Delete</button>
+    </div>
+
+    <div class="sora-meta-grid">
+      <div class="sora-meta-cell">
+        <div class="label">Tokens spent</div>
+        <div class="value" id="tokens-val">{{ '{:,}'.format(project.tokens_used or 0) }}</div>
+        <div class="sora-row-inline" style="margin-top: 12px;">
+          <input id="tokens-delta" class="sora-input" type="number" placeholder="+ tokens" inputmode="numeric">
+          <button class="btn btn-sm btn-primary" onclick="Sora.addTokens()">Add</button>
+        </div>
+      </div>
+      <div class="sora-meta-cell">
+        <div class="label">Last touched</div>
+        <div class="value" style="font-size: 17px;">{{ (project.updated_at or '')[:10] }}</div>
+        <div class="label" style="margin-top: 12px;">Born</div>
+        <div class="value" style="font-size: 17px;">{{ (project.created_at or '')[:10] }}</div>
+      </div>
+    </div>
+
+    <div>
+      <label class="sora-label">Notes</label>
+      <textarea class="sora-textarea" id="proj-notes" rows="6">{{ project.notes or '' }}</textarea>
+      <div style="display:flex; gap:8px; margin-top:10px;">
+        <button class="btn btn-primary btn-sm" onclick="Sora.saveNotes()">Save notes</button>
+      </div>
+    </div>
+
+    {% if project.sub_tools %}
+    <div style="margin-top: 26px;">
+      <label class="sora-label">Sub-tools</label>
+      <div class="sora-pill-list">
+        {% for t in project.sub_tools %}<span class="sora-pill">{{ t }}</span>{% endfor %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- RIGHT ────────────────────────────────────────────────── -->
+  <div style="display: grid; gap: 18px; align-content: start;">
+    <!-- Changelog -->
+    <div class="sora-detail-card" style="padding: 24px 26px;">
+      <div class="sora-company-eyebrow">III · Log</div>
+      <h2 style="margin: 6px 0 14px; font-family:'Space Grotesk', sans-serif; font-weight:600; font-size: 22px; letter-spacing: -0.02em; color: var(--ink);">What changed</h2>
+      <div class="sora-row-inline">
+        <input id="cl-text" class="sora-input" type="text"
+               placeholder="Today, I shipped…"
+               onkeydown="if(event.key==='Enter') Sora.addChangelog()">
+        <button class="btn btn-sm btn-primary" onclick="Sora.addChangelog()">Log</button>
+      </div>
+      <ul class="sora-list">
+        {% for c in project.changelog or [] %}
+          <li><span>{{ c.text }}</span><span class="when">{{ c.at[:10] }}</span></li>
+        {% else %}
+          <li style="color: var(--ink-low);">No entries yet.</li>
+        {% endfor %}
+      </ul>
+    </div>
+
+    <!-- Project-specific ideas -->
+    <div class="sora-detail-card" style="padding: 24px 26px;">
+      <div class="sora-company-eyebrow">IV · Drift</div>
+      <h2 style="margin: 6px 0 14px; font-family:'Space Grotesk', sans-serif; font-weight:600; font-size: 22px; letter-spacing: -0.02em; color: var(--ink);">Ideas for this</h2>
+      <div class="sora-row-inline">
+        <input id="pi-text" class="sora-input" type="text"
+               placeholder="A thought specific to this project…"
+               onkeydown="if(event.key==='Enter') Sora.addProjectIdea()">
+        <button class="btn btn-sm" onclick="Sora.addProjectIdea()">Add</button>
+      </div>
+      <ul class="sora-list">
+        {% for i in project.ideas or [] %}
+          <li><span>{{ i.text }}</span><span class="when">{{ i.at[:10] }}</span></li>
+        {% else %}
+          <li style="color: var(--ink-low);">No ideas captured yet.</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ── Edit modal ───────────────────────────────────────────── -->
+<div class="sora-modal-bg" id="modal-edit">
+  <div class="sora-modal">
+    <h3>Edit project</h3>
+    <div class="sora-form">
+      <div>
+        <label class="sora-label">Name</label>
+        <input class="sora-input" id="ep-name" type="text" value="{{ project.name }}">
+      </div>
+      <div>
+        <label class="sora-label">Tagline</label>
+        <input class="sora-input" id="ep-tagline" type="text" value="{{ project.tagline or '' }}">
+      </div>
+      <div class="sora-row-inline">
+        <div style="flex:1;">
+          <label class="sora-label">Company</label>
+          <select class="sora-select" id="ep-company">
+            <option value="">— unassigned —</option>
+            {% for c in companies %}
+              <option value="{{ c.id }}" {% if c.id == project.company_id %}selected{% endif %}>{{ c.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div style="flex:1;">
+          <label class="sora-label">Status</label>
+          <select class="sora-select" id="ep-status">
+            {% for s in ['idea','building','live','paused','shipped'] %}
+              <option value="{{ s }}" {% if project.status == s %}selected{% endif %}>{{ s }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      <div>
+        <label class="sora-label">URL</label>
+        <input class="sora-input" id="ep-url" type="text" value="{{ project.url or '' }}">
+      </div>
+    </div>
+    <div class="sora-modal-actions">
+      <button class="btn btn-ghost btn-sm" onclick="Sora.closeModal('modal-edit')">Cancel</button>
+      <button class="btn btn-primary btn-sm" onclick="Sora.saveEditProject('{{ project.id }}')">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>window.SORA_PROJECT_ID = "{{ project.id }}";</script>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='sora.js') }}"></script>
+{% endblock %}

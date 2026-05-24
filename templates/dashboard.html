@@ -1,0 +1,291 @@
+{% extends "_base.html" %}
+{% set active = 'dashboard' %}
+{% block title %}Sora · Hub{% endblock %}
+
+{% block content %}
+<!-- ── HERO ──────────────────────────────────────────────── -->
+<section class="sora-hero">
+  <div>
+    <h1 class="sora-hero-headline">
+      Your <em>portfolio brain</em>,<br>
+      mapped to the sky.
+    </h1>
+    <p class="sora-hero-sub">
+      Every company you run and every product you&rsquo;re building — held in
+      one calm constellation. Sora is the hub; each spoke is a venture; each
+      leaf is a tool you&rsquo;re working on right now.
+    </p>
+    <div class="sora-hero-meta">
+      <span class="sora-hero-dot"></span>
+      <span>{{ stats.live }} live · {{ stats.building }} in flight · {{ stats.ideas }} ideas</span>
+    </div>
+  </div>
+
+  <div class="sora-stats">
+    <div class="sora-stat">
+      <div class="sora-stat-label">Companies</div>
+      <div class="sora-stat-num">{{ stats.companies }}</div>
+    </div>
+    <div class="sora-stat">
+      <div class="sora-stat-label">Projects</div>
+      <div class="sora-stat-num">{{ stats.projects }}</div>
+    </div>
+    <div class="sora-stat">
+      <div class="sora-stat-label">In flight</div>
+      <div class="sora-stat-num accent">{{ stats.building }}</div>
+    </div>
+    <div class="sora-stat">
+      <div class="sora-stat-label">Tokens spent</div>
+      <div class="sora-stat-num">{{ '{:,}'.format(stats.tokens) }}</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── QUICK CAPTURE ─────────────────────────────────────── -->
+<div class="sora-quickbar">
+  <input id="quick-idea" class="sora-input" type="text"
+         placeholder="An idea drifting through your head — press enter to catch it…"
+         onkeydown="if(event.key==='Enter') Sora.quickIdea()">
+  <button class="btn btn-sm" onclick="Sora.quickIdea()">Catch idea</button>
+  <button class="btn btn-sm btn-primary" onclick="Sora.openNewProject()">+ Project</button>
+  <button class="btn btn-sm" onclick="Sora.openNewCompany()">+ Company</button>
+</div>
+
+<!-- ── HUB & SPOKE ───────────────────────────────────────── -->
+<div class="sora-section">
+  <div class="sora-section-mark">I · Hub</div>
+  <h2>The brain</h2>
+  <div class="sora-section-rule"></div>
+  <div class="sora-section-hint">Click any node</div>
+</div>
+
+<div class="sora-hub-wrap">
+  <div class="sora-hub-toolbar">
+    <span class="pill">live map</span>
+    <span class="pill">{{ stats.companies }} spokes</span>
+  </div>
+  <div class="sora-hub-legend">
+    <div class="key"><span class="swatch idea"></span>idea</div>
+    <div class="key"><span class="swatch building"></span>building</div>
+    <div class="key"><span class="swatch live"></span>live</div>
+    <div class="key"><span class="swatch paused"></span>paused</div>
+    <div class="key"><span class="swatch shipped"></span>shipped</div>
+  </div>
+  <svg id="sora-hub" viewBox="0 0 1200 720" preserveAspectRatio="xMidYMid meet" aria-label="Sora hub-and-spoke map"></svg>
+</div>
+
+<!-- Hub data, consumed by sora.js to render the SVG -->
+<script id="sora-hub-data" type="application/json">
+{
+  "companies": [
+    {% for c in companies %}
+    {
+      "id":      "{{ c.id }}",
+      "name":    {{ c.name|tojson }},
+      "tagline": {{ (c.tagline or '')|tojson }},
+      "color":   {{ (c.color or '#0ea5e9')|tojson }},
+      "projects": [
+        {% for p in by_company.get(c.id, []) %}
+        {
+          "id":          "{{ p.id }}",
+          "name":        {{ p.name|tojson }},
+          "status":      "{{ p.status }}",
+          "tokens_used": {{ p.tokens_used or 0 }},
+          "url":         {{ (p.url or '')|tojson }}
+        }{{ "," if not loop.last }}
+        {% endfor %}
+      ]
+    }{{ "," if not loop.last }}
+    {% endfor %}
+  ],
+  "orphans": [
+    {% for p in by_company.get(none, []) %}
+    {
+      "id":     "{{ p.id }}",
+      "name":   {{ p.name|tojson }},
+      "status": "{{ p.status }}"
+    }{{ "," if not loop.last }}
+    {% endfor %}
+  ]
+}
+</script>
+
+<!-- ── COMPANY LIST (manage / edit) ──────────────────────── -->
+<div class="sora-section">
+  <div class="sora-section-mark">II · Roster</div>
+  <h2>Companies &amp; projects</h2>
+  <div class="sora-section-rule"></div>
+  <div class="sora-section-hint">{{ stats.companies }} companies · {{ stats.projects }} projects</div>
+</div>
+
+{% for company in companies %}
+  <article class="sora-company" style="--c: {{ company.color }};">
+    <header class="sora-company-head">
+      <div class="sora-company-meta">
+        <div class="sora-company-eyebrow">{{ '%02d'|format(loop.index) }} · Company</div>
+        <div class="sora-company-name">{{ company.name }}</div>
+        {% if company.tagline %}<div class="sora-company-tag">{{ company.tagline }}</div>{% endif %}
+      </div>
+      <div class="sora-company-actions">
+        <button class="btn btn-sm" onclick="Sora.openNewProject('{{ company.id }}')">+ Project</button>
+        <button class="btn btn-sm btn-ghost" onclick="Sora.editCompany('{{ company.id }}')">Edit</button>
+      </div>
+    </header>
+
+    {% set projects = by_company.get(company.id, []) %}
+    {% if projects %}
+      <div class="sora-projects">
+        {% for p in projects %}
+          <a href="/project/{{ p.id }}" class="sora-card">
+            <div class="sora-card-head">
+              <div class="sora-card-name">{{ p.name }}</div>
+              <span class="sora-badge s-{{ p.status }}">{{ p.status }}</span>
+            </div>
+            {% if p.tagline %}<div class="sora-card-tag">{{ p.tagline }}</div>{% endif %}
+            <div class="sora-card-meta">
+              <span>
+                {% if p.url %}
+                  <span class="sora-ping-dot" data-ping="{{ p.url }}"></span>
+                  <span>live ↗</span>
+                {% else %}
+                  <span style="opacity:0.5;">unbound</span>
+                {% endif %}
+              </span>
+              <span>{{ '{:,}'.format(p.tokens_used or 0) }} TOK</span>
+            </div>
+          </a>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="sora-empty">No projects under this company yet.</div>
+    {% endif %}
+  </article>
+{% endfor %}
+
+{% set orphans = by_company.get(none, []) %}
+{% if orphans %}
+  <article class="sora-company" style="--c: #94a3b8;">
+    <header class="sora-company-head">
+      <div class="sora-company-meta">
+        <div class="sora-company-eyebrow">— · Unassigned</div>
+        <div class="sora-company-name">Loose ends</div>
+        <div class="sora-company-tag">Projects not yet attached to a company.</div>
+      </div>
+    </header>
+    <div class="sora-projects">
+      {% for p in orphans %}
+        <a href="/project/{{ p.id }}" class="sora-card">
+          <div class="sora-card-head">
+            <div class="sora-card-name">{{ p.name }}</div>
+            <span class="sora-badge s-{{ p.status }}">{{ p.status }}</span>
+          </div>
+          {% if p.tagline %}<div class="sora-card-tag">{{ p.tagline }}</div>{% endif %}
+        </a>
+      {% endfor %}
+    </div>
+  </article>
+{% endif %}
+
+<!-- ── IDEAS INBOX ──────────────────────────────────────── -->
+<div class="sora-section">
+  <div class="sora-section-mark">III · Drift</div>
+  <h2>Ideas you&rsquo;re noodling on</h2>
+  <div class="sora-section-rule"></div>
+  <div class="sora-section-hint">{{ ideas|length }} captured</div>
+</div>
+
+<div class="sora-ideas">
+  {% if ideas %}
+    {% for i in ideas %}
+      <div class="sora-idea-row" data-idea-id="{{ i.id }}">
+        <div class="sora-idea-text">{{ i.text }}</div>
+        <div class="sora-idea-meta">{{ i.created_at[:10] }}</div>
+        <button class="btn btn-sm" onclick="Sora.promoteIdea('{{ i.id }}')">Promote</button>
+        <button class="btn btn-sm btn-danger" onclick="Sora.deleteIdea('{{ i.id }}')">×</button>
+      </div>
+    {% endfor %}
+  {% else %}
+    <div class="sora-empty">Nothing drifting yet. Use the field above to capture a thought.</div>
+  {% endif %}
+</div>
+
+<!-- ── MODALS ───────────────────────────────────────────── -->
+<div class="sora-modal-bg" id="modal-project">
+  <div class="sora-modal">
+    <h3>New project</h3>
+    <div class="sora-form">
+      <div>
+        <label class="sora-label">Name</label>
+        <input class="sora-input" id="np-name" type="text" placeholder="e.g. Hillbrook Concierge v2">
+      </div>
+      <div>
+        <label class="sora-label">Tagline</label>
+        <input class="sora-input" id="np-tagline" type="text" placeholder="One line — what is this?">
+      </div>
+      <div class="sora-row-inline">
+        <div style="flex:1;">
+          <label class="sora-label">Company</label>
+          <select class="sora-select" id="np-company">
+            <option value="">— unassigned —</option>
+            {% for c in companies %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}
+          </select>
+        </div>
+        <div style="flex:1;">
+          <label class="sora-label">Status</label>
+          <select class="sora-select" id="np-status">
+            <option value="idea">idea</option>
+            <option value="building">building</option>
+            <option value="live">live</option>
+            <option value="paused">paused</option>
+            <option value="shipped">shipped</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <label class="sora-label">URL (optional)</label>
+        <input class="sora-input" id="np-url" type="text" placeholder="https://…">
+      </div>
+      <div>
+        <label class="sora-label">Notes</label>
+        <textarea class="sora-textarea" id="np-notes" placeholder="What is this? Where does it live?"></textarea>
+      </div>
+    </div>
+    <div class="sora-modal-actions">
+      <button class="btn btn-ghost btn-sm" onclick="Sora.closeModal('modal-project')">Cancel</button>
+      <button class="btn btn-primary btn-sm" onclick="Sora.saveNewProject()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="sora-modal-bg" id="modal-company">
+  <div class="sora-modal">
+    <h3>New company</h3>
+    <div class="sora-form">
+      <div>
+        <label class="sora-label">Name</label>
+        <input class="sora-input" id="nc-name" type="text">
+      </div>
+      <div>
+        <label class="sora-label">Tagline</label>
+        <input class="sora-input" id="nc-tagline" type="text">
+      </div>
+      <div>
+        <label class="sora-label">Accent color</label>
+        <input class="sora-input" id="nc-color" type="color" value="#0ea5e9" style="height:46px; padding:6px;">
+      </div>
+      <div>
+        <label class="sora-label">Notes</label>
+        <textarea class="sora-textarea" id="nc-notes"></textarea>
+      </div>
+    </div>
+    <div class="sora-modal-actions">
+      <button class="btn btn-ghost btn-sm" onclick="Sora.closeModal('modal-company')">Cancel</button>
+      <button class="btn btn-primary btn-sm" onclick="Sora.saveNewCompany()">Save</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='sora.js') }}"></script>
+{% endblock %}
