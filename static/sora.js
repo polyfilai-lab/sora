@@ -261,6 +261,12 @@
   let hubData = null;
   let hubFocused = null;        // company id, or null = portfolio view
   let hubSvg = null;
+  let hubPendingDraw = null;    // pending drawHub timeout
+  let hubLeaveTimer = null;     // pending unfocus-on-leave timeout
+  let hubSvgListenersAttached = false;
+  const HUB_LEAVE_DELAY = 380;  // ms before mouseleave un-focuses
+  const HUB_HOVER_DEBOUNCE = 80;// ms to wait before triggering hover-focus
+  let hubHoverDebounce = null;
 
   function esc(s) {
     return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -311,17 +317,53 @@
 
   // Re-render the hub (animated when toggling focus)
   function drawHub(animate) {
+    if (hubPendingDraw) { clearTimeout(hubPendingDraw); hubPendingDraw = null; }
     if (animate) {
       hubSvg.classList.add('is-transitioning');
-      setTimeout(() => {
+      hubPendingDraw = setTimeout(() => {
         hubSvg.innerHTML = hubFocused ? renderFocused() : renderPortfolio();
         attachHubInteractions();
         requestAnimationFrame(() => hubSvg.classList.remove('is-transitioning'));
-      }, 180);
+        hubPendingDraw = null;
+      }, 160);
     } else {
       hubSvg.innerHTML = hubFocused ? renderFocused() : renderPortfolio();
       attachHubInteractions();
     }
+    attachSvgLeaveListeners();
+  }
+
+  // SVG-level mouseenter/leave for the hover-to-expand flow.
+  // Attached only once — the SVG element itself doesn't get replaced.
+  function attachSvgLeaveListeners() {
+    if (hubSvgListenersAttached || !hubSvg) return;
+    hubSvgListenersAttached = true;
+    hubSvg.addEventListener('mouseenter', () => {
+      if (hubLeaveTimer) { clearTimeout(hubLeaveTimer); hubLeaveTimer = null; }
+    });
+    hubSvg.addEventListener('mouseleave', () => {
+      if (hubLeaveTimer) clearTimeout(hubLeaveTimer);
+      if (hubHoverDebounce) { clearTimeout(hubHoverDebounce); hubHoverDebounce = null; }
+      hubLeaveTimer = setTimeout(() => {
+        if (hubFocused !== null) {
+          hubFocused = null;
+          drawHub(true);
+        }
+        hubLeaveTimer = null;
+      }, HUB_LEAVE_DELAY);
+    });
+  }
+
+  // Switch focus to a company (debounced so brief sweeps don't trigger)
+  function hoverFocus(cid) {
+    if (hubHoverDebounce) { clearTimeout(hubHoverDebounce); hubHoverDebounce = null; }
+    if (hubLeaveTimer)    { clearTimeout(hubLeaveTimer);    hubLeaveTimer = null; }
+    if (hubFocused === cid) return;
+    hubHoverDebounce = setTimeout(() => {
+      hubFocused = cid;
+      drawHub(true);
+      hubHoverDebounce = null;
+    }, HUB_HOVER_DEBOUNCE);
   }
 
   // ── PORTFOLIO MODE (default) ────────────────────────────────
@@ -525,33 +567,34 @@
 
   // ── interactions wired after every (re)render ───────────────
   function attachHubInteractions() {
-    // Portfolio: click a company to focus it
+    // Portfolio: HOVER (or click) a company to focus it
     hubSvg.querySelectorAll('.hub-company-clickable').forEach(node => {
-      node.addEventListener('click', (e) => {
-        e.stopPropagation();
-        hubFocused = node.dataset.cid;
-        drawHub(true);
-        // Smooth scroll the hub into view so user sees the transition
-        document.querySelector('.sora-hub-wrap')
-          ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      });
-      // Hover: brighten the spoke
       const cid = node.dataset.cid;
       node.addEventListener('mouseenter', () => {
         hubSvg.querySelectorAll('.hub-spoke[data-cid="' + cid + '"]')
               .forEach(s => s.classList.add('is-hot'));
+        hoverFocus(cid);
       });
       node.addEventListener('mouseleave', () => {
         hubSvg.querySelectorAll('.hub-spoke.is-hot')
               .forEach(s => s.classList.remove('is-hot'));
       });
-    });
-
-    // Focused-mode: click another company in the switcher to drill into it
-    hubSvg.querySelectorAll('.hub-other-company').forEach(node => {
       node.addEventListener('click', (e) => {
         e.stopPropagation();
-        hubFocused = node.dataset.cid;
+        if (hubHoverDebounce) { clearTimeout(hubHoverDebounce); hubHoverDebounce = null; }
+        hubFocused = cid;
+        drawHub(true);
+      });
+    });
+
+    // Focused-mode: hover (or click) another company in the switcher to drill into it
+    hubSvg.querySelectorAll('.hub-other-company').forEach(node => {
+      const cid = node.dataset.cid;
+      node.addEventListener('mouseenter', () => hoverFocus(cid));
+      node.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (hubHoverDebounce) { clearTimeout(hubHoverDebounce); hubHoverDebounce = null; }
+        hubFocused = cid;
         drawHub(true);
       });
     });
@@ -560,6 +603,8 @@
     hubSvg.querySelectorAll('[data-back]').forEach(node => {
       node.addEventListener('click', (e) => {
         e.stopPropagation();
+        if (hubHoverDebounce) { clearTimeout(hubHoverDebounce); hubHoverDebounce = null; }
+        if (hubLeaveTimer)    { clearTimeout(hubLeaveTimer);    hubLeaveTimer = null; }
         hubFocused = null;
         drawHub(true);
       });
