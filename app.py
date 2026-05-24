@@ -245,6 +245,20 @@ def api_promote_idea(idea_id: str):
     return jsonify(p) if p else (jsonify(error="not found"), 404)
 
 
+# ── API: Railway auto-sync ──────────────────────────────────────────────────
+@app.post("/api/sync-railway")
+def api_sync_railway():
+    """Reach into Railway via GraphQL and reconcile service URLs with Sora projects."""
+    try:
+        import railway_sync
+        result = railway_sync.sync()
+        return jsonify(ok=True, **result)
+    except RuntimeError as e:
+        return jsonify(ok=False, error=str(e)), 400
+    except Exception as e:
+        return jsonify(ok=False, error=f"{type(e).__name__}: {e}"), 500
+
+
 # ── API: Health-check ping (server-side, avoids CORS) ───────────────────────
 @app.get("/api/ping")
 def api_ping():

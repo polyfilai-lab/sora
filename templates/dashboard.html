@@ -49,6 +49,13 @@
   <button class="btn btn-sm" onclick="Sora.quickIdea()">Catch idea</button>
   <button class="btn btn-sm btn-primary" onclick="Sora.openNewProject()">+ Project</button>
   <button class="btn btn-sm" onclick="Sora.openNewCompany()">+ Company</button>
+  <button class="btn btn-sm btn-accent" onclick="Sora.syncRailway()" title="Pull live URLs from Railway">⟲ Sync Railway</button>
+</div>
+
+<!-- Sync result panel (hidden until syncRailway runs) -->
+<div id="sync-panel" style="display:none; margin: 4px 0 18px; padding: 18px 22px; border-radius: 16px;
+                             background: var(--surface-solid); border: 1px solid var(--edge-soft);
+                             box-shadow: var(--shadow-2);">
 </div>
 
 <!-- ── HUB & SPOKE ───────────────────────────────────────── -->

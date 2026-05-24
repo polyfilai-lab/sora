@@ -82,6 +82,56 @@
     try { await api('POST', '/api/companies', body); location.reload(); }
     catch (e) { alert(e.message); }
   };
+  // ── Railway auto-sync ─────────────────────────────────────
+  Sora.syncRailway = async function () {
+    const panel = document.getElementById('sync-panel');
+    if (panel) {
+      panel.style.display = 'block';
+      panel.innerHTML = '<div style="font-family: \'JetBrains Mono\', monospace; font-size: 11px; letter-spacing: 0.18em; color: var(--accent-strong); text-transform: uppercase;">Syncing from Railway…</div>';
+    }
+    try {
+      const r = await fetch('/api/sync-railway', { method: 'POST' });
+      const j = await r.json();
+      if (!j.ok) {
+        if (panel) panel.innerHTML = renderSyncError(j.error || 'Unknown error');
+        return;
+      }
+      if (panel) panel.innerHTML = renderSyncResult(j);
+      // Reload after 2s so the new URLs/projects appear in the page
+      setTimeout(() => location.reload(), 2200);
+    } catch (e) {
+      if (panel) panel.innerHTML = renderSyncError(e.message);
+    }
+  };
+
+  function renderSyncResult(j) {
+    const u = j.updated || [], a = j.added || [], s = j.skipped || [];
+    let html = '<div style="font-family: \'JetBrains Mono\', monospace; font-size: 11px; letter-spacing: 0.18em; color: #15803d; text-transform: uppercase; margin-bottom: 12px;">Sync complete · ' + u.length + ' updated · ' + a.length + ' added · ' + s.length + ' unchanged</div>';
+    if (u.length) {
+      html += '<div style="margin: 10px 0;"><strong style="font-family: \'Space Grotesk\', sans-serif; font-size: 13px;">Updated</strong>';
+      u.forEach(x => {
+        html += '<div style="font-size: 12.5px; margin: 4px 0; color: var(--ink-dim);">↻ <strong>' + escapeHtml(x.name) + '</strong> → <span style="font-family: monospace; color: var(--accent-strong);">' + escapeHtml(x.new_url) + '</span></div>';
+      });
+      html += '</div>';
+    }
+    if (a.length) {
+      html += '<div style="margin: 10px 0;"><strong style="font-family: \'Space Grotesk\', sans-serif; font-size: 13px;">Added</strong>';
+      a.forEach(x => {
+        html += '<div style="font-size: 12.5px; margin: 4px 0; color: var(--ink-dim);">＋ <strong>' + escapeHtml(x.name) + '</strong> → <span style="font-family: monospace; color: var(--accent-strong);">' + escapeHtml(x.url) + '</span></div>';
+      });
+      html += '</div>';
+    }
+    return html;
+  }
+  function renderSyncError(msg) {
+    return '<div style="font-family: \'JetBrains Mono\', monospace; font-size: 11px; letter-spacing: 0.18em; color: #b91c1c; text-transform: uppercase; margin-bottom: 8px;">Sync failed</div>' +
+           '<div style="font-size: 13px; color: var(--ink-dim);">' + escapeHtml(msg) + '</div>' +
+           '<div style="font-size: 12px; color: var(--ink-mute); margin-top: 8px;">Make sure <code>RAILWAY_API_TOKEN</code> is set in Sora&rsquo;s Railway Variables.</div>';
+  }
+  function escapeHtml(s) {
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
   Sora.editCompany = function (id) {
     const newName = prompt('Rename company:');
     if (!newName) return;
