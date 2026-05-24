@@ -325,9 +325,192 @@ input, select, textarea { font-family: inherit; }
 .sora-quickbar .sora-input:focus { outline: none; }
 
 /* ──────────────────────────────────────────────────────────────
-   HUB & SPOKE
+   ATLAS — horizontal portfolio columns
    ────────────────────────────────────────────────────────────── */
+.atlas-scroll {
+  position: relative;
+  margin: 0 -36px;   /* full-bleed against .sora-main padding */
+  padding: 6px 36px 30px;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+}
+.atlas-scroll::-webkit-scrollbar { height: 10px; }
+.atlas-scroll::-webkit-scrollbar-track { background: transparent; }
+.atlas-scroll::-webkit-scrollbar-thumb { background: var(--sky-2); border-radius: 99px; }
+.atlas-scroll::-webkit-scrollbar-thumb:hover { background: var(--sky-3); }
+
+.atlas-row {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(320px, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.atlas-col {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 280px;
+  border-radius: 22px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(255,255,255,0.82));
+  backdrop-filter: blur(14px) saturate(160%);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  border: 1px solid var(--edge-soft);
+  box-shadow: var(--shadow-2);
+  overflow: hidden;
+  scroll-snap-align: start;
+  transition: transform 0.22s ease, box-shadow 0.22s ease;
+}
+.atlas-col:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-3);
+}
+
+/* Color band running down the left edge of every column */
+.atlas-col::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; bottom: 0;
+  width: 4px;
+  background: linear-gradient(180deg, var(--c, var(--sky-5)), color-mix(in srgb, var(--c, var(--sky-5)) 60%, transparent));
+}
+
+.atlas-col-head {
+  padding: 26px 26px 18px 30px;
+  border-bottom: 1px solid var(--edge-soft);
+}
+.atlas-col-eyebrow {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px; font-weight: 600;
+  letter-spacing: 0.26em; text-transform: uppercase;
+  color: var(--c, var(--accent));
+  margin-bottom: 10px;
+}
+.atlas-col-eyebrow::before {
+  content: '';
+  width: 22px; height: 1px;
+  background: var(--c, var(--sky-5));
+}
+.atlas-col-name {
+  margin: 0;
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 600; font-size: 22px;
+  letter-spacing: -0.025em; line-height: 1.1;
+  color: var(--ink);
+}
+.atlas-col-tag {
+  margin-top: 6px;
+  font-size: 13px; line-height: 1.45;
+  color: var(--ink-mute);
+}
+.atlas-col-meta {
+  display: flex; gap: 14px;
+  margin-top: 14px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; letter-spacing: 0.14em;
+  color: var(--ink-mute);
+  text-transform: uppercase;
+}
+.atlas-col-meta strong {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700; font-size: 13px;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+}
+.atlas-col-live {
+  display: inline-flex; align-items: center; gap: 4px;
+  color: #15803d;
+}
+.atlas-col-live::before {
+  content: ''; width: 6px; height: 6px; border-radius: 50%;
+  background: #22c55e;
+  box-shadow: 0 0 6px rgba(34,197,94,0.7);
+  animation: pulse 2.2s ease-in-out infinite;
+}
+
+/* Project rows */
+.atlas-projects {
+  list-style: none;
+  margin: 0; padding: 6px 12px;
+  flex: 1; min-height: 0;
+}
+.atlas-project {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 14px;
+  border-radius: 11px;
+  text-decoration: none;
+  color: var(--ink-dim);
+  transition: background 0.15s ease, transform 0.15s ease;
+  position: relative;
+}
+.atlas-project:hover {
+  background: color-mix(in srgb, var(--c, var(--sky-5)) 7%, white);
+  transform: translateX(2px);
+}
+.atlas-project-pulse {
+  flex: 0 0 8px;
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--ink-low);
+  box-shadow: 0 0 0 0 transparent;
+}
+.atlas-project-pulse.s-idea     { background: #a78bfa; }
+.atlas-project-pulse.s-building { background: #0ea5e9; box-shadow: 0 0 8px rgba(14,165,233,0.55); animation: pulse 2.4s ease-in-out infinite; }
+.atlas-project-pulse.s-live     { background: #22c55e; box-shadow: 0 0 8px rgba(34,197,94,0.55); }
+.atlas-project-pulse.s-paused   { background: #f59e0b; }
+.atlas-project-pulse.s-shipped  { background: #f43f5e; }
+.atlas-project-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.atlas-project-name {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 600; font-size: 14px;
+  color: var(--ink);
+  letter-spacing: -0.012em;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.atlas-project:hover .atlas-project-name { color: var(--accent-strong); }
+.atlas-project-tag {
+  font-size: 12px;
+  color: var(--ink-mute);
+  line-height: 1.35;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.atlas-project-meta {
+  display: flex; align-items: center; gap: 8px;
+  flex-shrink: 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9.5px; letter-spacing: 0.18em;
+  color: var(--ink-mute);
+  text-transform: uppercase;
+  font-weight: 600;
+}
+.atlas-project-status {
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--c, var(--sky-5)) 12%, white);
+  color: color-mix(in srgb, var(--c, var(--sky-5)) 70%, var(--ink));
+}
+.atlas-empty {
+  padding: 18px 16px;
+  text-align: center;
+  font-size: 13px; color: var(--ink-low);
+  font-style: italic;
+}
+
+.atlas-col-foot {
+  display: flex; gap: 8px;
+  padding: 14px 22px 20px;
+  border-top: 1px solid var(--edge-soft);
+}
+
+/* legacy SVG hub container (kept so old templates don't break, hidden) */
 .sora-hub-wrap {
+  display: none;
+}
+/* placeholder so the rest of the .sora-hub-wrap CSS in this file
+   keeps parsing cleanly */
+.sora-hub-wrap--legacy {
   position: relative;
   border-radius: 24px;
   background:
@@ -849,19 +1032,26 @@ input, select, textarea { font-family: inherit; }
   .sora-main { padding: 28px 20px 80px; }
   .sora-hero { grid-template-columns: 1fr; gap: 28px; }
   .sora-detail { grid-template-columns: 1fr; }
-  #sora-hub { height: 560px; }
   .sora-section { margin: 44px 0 18px; }
   .sora-section h2 { font-size: 22px; }
   .sora-tag, .sora-clock { display: none; }
   .sora-topbar { padding: 12px 18px; }
+  .atlas-scroll { margin: 0 -20px; padding: 6px 20px 24px; }
+  .atlas-row { grid-auto-columns: minmax(280px, 1fr); gap: 14px; }
+}
+@media (max-width: 700px) {
+  /* Stack columns vertically on phones — easier to scan than horizontal scroll */
+  .atlas-row {
+    grid-auto-flow: row;
+    grid-auto-columns: unset;
+    grid-template-columns: 1fr;
+  }
 }
 @media (max-width: 560px) {
   .sora-stats { grid-template-columns: 1fr 1fr; }
   .sora-stat-num { font-size: 28px; }
   .sora-projects { grid-template-columns: 1fr; }
-  #sora-hub { height: 440px; }
-  .sora-hub-legend { display: none; }
-  .sora-company { padding: 18px 18px; }
-  .sora-company-head { flex-direction: column; align-items: flex-start; }
   .sora-quickbar { flex-direction: column; padding: 12px; }
+  .atlas-col-head { padding: 22px 22px 16px 26px; }
+  .atlas-col-name { font-size: 20px; }
 }

@@ -1,19 +1,19 @@
 {% extends "_base.html" %}
 {% set active = 'dashboard' %}
-{% block title %}Sora · Hub{% endblock %}
+{% block title %}Sora · Atlas{% endblock %}
 
 {% block content %}
 <!-- ── HERO ──────────────────────────────────────────────── -->
 <section class="sora-hero">
   <div>
     <h1 class="sora-hero-headline">
-      Your <em>portfolio brain</em>,<br>
-      mapped to the sky.
+      Everything you&rsquo;re <em>building</em>,<br>
+      in one calm view.
     </h1>
     <p class="sora-hero-sub">
-      Every company you run and every product you&rsquo;re building — held in
-      one calm constellation. Sora is the hub; each spoke is a venture; each
-      leaf is a tool you&rsquo;re working on right now.
+      Sora is your portfolio cockpit. Every company is a column. Every product
+      is a row. Status, URLs, tokens, ideas — all at a glance, no clicks
+      required.
     </p>
     <div class="sora-hero-meta">
       <span class="sora-hero-dot"></span>
@@ -52,150 +52,100 @@
   <button class="btn btn-sm btn-accent" onclick="Sora.syncRailway()" title="Pull live URLs from Railway">⟲ Sync Railway</button>
 </div>
 
-<!-- Sync result panel (hidden until syncRailway runs) -->
 <div id="sync-panel" style="display:none; margin: 4px 0 18px; padding: 18px 22px; border-radius: 16px;
                              background: var(--surface-solid); border: 1px solid var(--edge-soft);
-                             box-shadow: var(--shadow-2);">
-</div>
+                             box-shadow: var(--shadow-2);"></div>
 
-<!-- ── HUB & SPOKE ───────────────────────────────────────── -->
+<!-- ── ATLAS — portfolio columns ─────────────────────────── -->
 <div class="sora-section">
-  <div class="sora-section-mark">I · Hub</div>
-  <h2>The brain</h2>
-  <div class="sora-section-rule"></div>
-  <div class="sora-section-hint">Click any node</div>
-</div>
-
-<div class="sora-hub-wrap">
-  <div class="sora-hub-toolbar">
-    <span class="pill">live map</span>
-    <span class="pill">{{ stats.companies }} spokes</span>
-  </div>
-  <div class="sora-hub-legend">
-    <div class="key"><span class="swatch idea"></span>idea</div>
-    <div class="key"><span class="swatch building"></span>building</div>
-    <div class="key"><span class="swatch live"></span>live</div>
-    <div class="key"><span class="swatch paused"></span>paused</div>
-    <div class="key"><span class="swatch shipped"></span>shipped</div>
-  </div>
-  <svg id="sora-hub" viewBox="0 0 1200 720" preserveAspectRatio="xMidYMid meet" aria-label="Sora hub-and-spoke map"></svg>
-</div>
-
-<!-- Hub data, consumed by sora.js to render the SVG -->
-<script id="sora-hub-data" type="application/json">
-{
-  "companies": [
-    {% for c in companies %}
-    {
-      "id":      "{{ c.id }}",
-      "name":    {{ c.name|tojson }},
-      "tagline": {{ (c.tagline or '')|tojson }},
-      "color":   {{ (c.color or '#0ea5e9')|tojson }},
-      "projects": [
-        {% for p in by_company.get(c.id, []) %}
-        {
-          "id":          "{{ p.id }}",
-          "name":        {{ p.name|tojson }},
-          "status":      "{{ p.status }}",
-          "tokens_used": {{ p.tokens_used or 0 }},
-          "url":         {{ (p.url or '')|tojson }}
-        }{{ "," if not loop.last }}
-        {% endfor %}
-      ]
-    }{{ "," if not loop.last }}
-    {% endfor %}
-  ],
-  "orphans": [
-    {% for p in by_company.get(none, []) %}
-    {
-      "id":     "{{ p.id }}",
-      "name":   {{ p.name|tojson }},
-      "status": "{{ p.status }}"
-    }{{ "," if not loop.last }}
-    {% endfor %}
-  ]
-}
-</script>
-
-<!-- ── COMPANY LIST (manage / edit) ──────────────────────── -->
-<div class="sora-section">
-  <div class="sora-section-mark">II · Roster</div>
-  <h2>Companies &amp; projects</h2>
+  <div class="sora-section-mark">I · Atlas</div>
+  <h2>Your portfolio</h2>
   <div class="sora-section-rule"></div>
   <div class="sora-section-hint">{{ stats.companies }} companies · {{ stats.projects }} projects</div>
 </div>
 
-{% for company in companies %}
-  <article class="sora-company" style="--c: {{ company.color }};">
-    <header class="sora-company-head">
-      <div class="sora-company-meta">
-        <div class="sora-company-eyebrow">{{ '%02d'|format(loop.index) }} · Company</div>
-        <div class="sora-company-name">{{ company.name }}</div>
-        {% if company.tagline %}<div class="sora-company-tag">{{ company.tagline }}</div>{% endif %}
-      </div>
-      <div class="sora-company-actions">
-        <button class="btn btn-sm" onclick="Sora.openNewProject('{{ company.id }}')">+ Project</button>
-        <button class="btn btn-sm btn-ghost" onclick="Sora.editCompany('{{ company.id }}')">Edit</button>
-      </div>
-    </header>
-
-    {% set projects = by_company.get(company.id, []) %}
-    {% if projects %}
-      <div class="sora-projects">
-        {% for p in projects %}
-          <a href="/project/{{ p.id }}" class="sora-card">
-            <div class="sora-card-head">
-              <div class="sora-card-name">{{ p.name }}</div>
-              <span class="sora-badge s-{{ p.status }}">{{ p.status }}</span>
-            </div>
-            {% if p.tagline %}<div class="sora-card-tag">{{ p.tagline }}</div>{% endif %}
-            <div class="sora-card-meta">
-              <span>
-                {% if p.url %}
-                  <span class="sora-ping-dot" data-ping="{{ p.url }}"></span>
-                  <span>live ↗</span>
-                {% else %}
-                  <span style="opacity:0.5;">unbound</span>
-                {% endif %}
-              </span>
-              <span>{{ '{:,}'.format(p.tokens_used or 0) }} TOK</span>
-            </div>
-          </a>
-        {% endfor %}
-      </div>
-    {% else %}
-      <div class="sora-empty">No projects under this company yet.</div>
-    {% endif %}
-  </article>
-{% endfor %}
-
-{% set orphans = by_company.get(none, []) %}
-{% if orphans %}
-  <article class="sora-company" style="--c: #94a3b8;">
-    <header class="sora-company-head">
-      <div class="sora-company-meta">
-        <div class="sora-company-eyebrow">— · Unassigned</div>
-        <div class="sora-company-name">Loose ends</div>
-        <div class="sora-company-tag">Projects not yet attached to a company.</div>
-      </div>
-    </header>
-    <div class="sora-projects">
-      {% for p in orphans %}
-        <a href="/project/{{ p.id }}" class="sora-card">
-          <div class="sora-card-head">
-            <div class="sora-card-name">{{ p.name }}</div>
-            <span class="sora-badge s-{{ p.status }}">{{ p.status }}</span>
+<div class="atlas-scroll">
+  <div class="atlas-row">
+    {% for company in companies %}
+      {% set projects = by_company.get(company.id, []) %}
+      {% set live = projects | selectattr('status', 'equalto', 'live') | list | length %}
+      <article class="atlas-col" style="--c: {{ company.color }};">
+        <header class="atlas-col-head">
+          <div class="atlas-col-band"></div>
+          <div class="atlas-col-eyebrow">{{ '%02d'|format(loop.index) }} · Company</div>
+          <h3 class="atlas-col-name">{{ company.name }}</h3>
+          {% if company.tagline %}<div class="atlas-col-tag">{{ company.tagline }}</div>{% endif %}
+          <div class="atlas-col-meta">
+            <span><strong>{{ projects|length }}</strong> project{{ '' if projects|length == 1 else 's' }}</span>
+            {% if live %}<span class="atlas-col-live">●&nbsp;{{ live }} live</span>{% endif %}
           </div>
-          {% if p.tagline %}<div class="sora-card-tag">{{ p.tagline }}</div>{% endif %}
-        </a>
-      {% endfor %}
-    </div>
-  </article>
-{% endif %}
+        </header>
 
-<!-- ── IDEAS INBOX ──────────────────────────────────────── -->
+        <ul class="atlas-projects">
+          {% for p in projects %}
+            <li>
+              <a class="atlas-project" href="/project/{{ p.id }}">
+                <span class="atlas-project-pulse s-{{ p.status }}"></span>
+                <span class="atlas-project-main">
+                  <span class="atlas-project-name">{{ p.name }}</span>
+                  {% if p.tagline %}<span class="atlas-project-tag">{{ p.tagline }}</span>{% endif %}
+                </span>
+                <span class="atlas-project-meta">
+                  {% if p.url %}<span class="sora-ping-dot" data-ping="{{ p.url }}"></span>{% endif %}
+                  <span class="atlas-project-status">{{ p.status }}</span>
+                </span>
+              </a>
+            </li>
+          {% else %}
+            <li class="atlas-empty">No projects under this company yet.</li>
+          {% endfor %}
+        </ul>
+
+        <footer class="atlas-col-foot">
+          <button class="btn btn-sm btn-ghost" onclick="Sora.openNewProject('{{ company.id }}')">+ Add project</button>
+          <button class="btn btn-sm btn-ghost" onclick="Sora.editCompany('{{ company.id }}')">Edit</button>
+        </footer>
+      </article>
+    {% endfor %}
+
+    {# Unassigned column — only show if there are orphans #}
+    {% set orphans = by_company.get(none, []) %}
+    {% if orphans %}
+      <article class="atlas-col" style="--c: #94a3b8;">
+        <header class="atlas-col-head">
+          <div class="atlas-col-band"></div>
+          <div class="atlas-col-eyebrow">— · Unassigned</div>
+          <h3 class="atlas-col-name">Loose ends</h3>
+          <div class="atlas-col-tag">Projects not yet attached to a company.</div>
+          <div class="atlas-col-meta">
+            <span><strong>{{ orphans|length }}</strong> project{{ '' if orphans|length == 1 else 's' }}</span>
+          </div>
+        </header>
+        <ul class="atlas-projects">
+          {% for p in orphans %}
+            <li>
+              <a class="atlas-project" href="/project/{{ p.id }}">
+                <span class="atlas-project-pulse s-{{ p.status }}"></span>
+                <span class="atlas-project-main">
+                  <span class="atlas-project-name">{{ p.name }}</span>
+                  {% if p.tagline %}<span class="atlas-project-tag">{{ p.tagline }}</span>{% endif %}
+                </span>
+                <span class="atlas-project-meta">
+                  {% if p.url %}<span class="sora-ping-dot" data-ping="{{ p.url }}"></span>{% endif %}
+                  <span class="atlas-project-status">{{ p.status }}</span>
+                </span>
+              </a>
+            </li>
+          {% endfor %}
+        </ul>
+      </article>
+    {% endif %}
+  </div>
+</div>
+
+<!-- ── IDEAS INBOX ───────────────────────────────────────── -->
 <div class="sora-section">
-  <div class="sora-section-mark">III · Drift</div>
+  <div class="sora-section-mark">II · Drift</div>
   <h2>Ideas you&rsquo;re noodling on</h2>
   <div class="sora-section-rule"></div>
   <div class="sora-section-hint">{{ ideas|length }} captured</div>
@@ -216,7 +166,7 @@
   {% endif %}
 </div>
 
-<!-- ── MODALS ───────────────────────────────────────────── -->
+<!-- ── MODALS (new project / new company) ───────────────── -->
 <div class="sora-modal-bg" id="modal-project">
   <div class="sora-modal">
     <h3>New project</h3>
