@@ -274,6 +274,49 @@ def api_ping():
         return jsonify(ok=False, error=str(e), url=url)
 
 
+# ── Auto-seed on first boot ─────────────────────────────────────────────────
+# Railway containers start empty (data is gitignored). If the persistent
+# volume is brand new, populate it with the initial company + project list
+# so the user doesn't have to find Railway's hidden "Run a Command" UI.
+def _bootstrap_if_empty():
+    try:
+        existing = store.load()
+        if existing.get("companies") or existing.get("projects"):
+            return  # already populated — leave it alone
+        print("[sora] data store is empty — running seed + Cortex migration…", flush=True)
+        import seed
+        seed.run()
+        import migrate_cortex_urls
+        migrate_cortex_urls.run()
+        print("[sora] bootstrap complete.", flush=True)
+    except Exception as e:
+        print(f"[sora] bootstrap skipped: {type(e).__name__}: {e}", flush=True)
+
+
+_bootstrap_if_empty()
+
+
+# Manual re-bootstrap endpoint (idempotent — only seeds if empty)
+@app.post("/api/bootstrap")
+def api_bootstrap():
+    try:
+        existing = store.load()
+        already = bool(existing.get("companies") or existing.get("projects"))
+        if already:
+            return jsonify(ok=True, status="already_populated",
+                           companies=len(existing.get("companies", [])),
+                           projects=len(existing.get("projects", [])))
+        import seed, migrate_cortex_urls
+        seed.run()
+        migrate_cortex_urls.run()
+        after = store.load()
+        return jsonify(ok=True, status="seeded",
+                       companies=len(after.get("companies", [])),
+                       projects=len(after.get("projects", [])))
+    except Exception as e:
+        return jsonify(ok=False, error=f"{type(e).__name__}: {e}"), 500
+
+
 # ── Startup ─────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5070))
