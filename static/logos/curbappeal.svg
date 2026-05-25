@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" role="img" aria-label="The Curb Appeal Co.">
+  <!-- Navy disc -->
+  <circle cx="120" cy="120" r="118" fill="#0B1E3F"/>
+
+  <!-- Two refined gold rings -->
+  <circle cx="120" cy="120" r="104" fill="none" stroke="#C9A24F" stroke-width="1.6"/>
+  <circle cx="120" cy="120" r="98" fill="none" stroke="#C9A24F" stroke-width="0.6" opacity="0.55"/>
+
+  <!-- Decorative gold diamonds on the horizontal axis -->
+  <g fill="#C9A24F">
+    <path d="M 16 120 L 24 113 L 32 120 L 24 127 Z"/>
+    <path d="M 208 120 L 216 113 L 224 120 L 216 127 Z"/>
+  </g>
+
+  <!-- Italic display C -->
+  <text x="120" y="153" text-anchor="middle"
+        font-family="'Fraunces','Georgia',serif"
+        font-size="120" font-weight="600" font-style="italic"
+        fill="#C9A24F">C</text>
+
+  <!-- Small wordmark below -->
+  <text x="120" y="190" text-anchor="middle"
+        font-family="'Inter','Helvetica',sans-serif"
+        font-size="10" font-weight="700" letter-spacing="4"
+        fill="#C9A24F">THE CURB APPEAL CO.</text>
+</svg>

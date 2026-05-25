@@ -472,15 +472,39 @@
     </svg>`,
   };
 
-  function logoFor(name) {
+  // Real logo files (drop them into /static/logos/ to override the inline marks)
+  const LOGO_FILES = {
+    curbappeal:  '/static/logos/curbappeal.svg',
+    goodkidtech: '/static/logos/goodkidtech.jpg',
+    // Add a real fairfield.svg / fairfield.png to /static/logos/ to use the
+    // actual Fairfield brand mark. Same for hillbrook, verify, polypets.
+  };
+
+  function slugFor(name) {
     const k = String(name || '').toLowerCase().replace(/[^a-z]/g, '');
-    if (k.includes('fairfield'))                       return COMPANY_LOGOS.fairfield;
-    if (k.includes('hillbrook'))                       return COMPANY_LOGOS.hillbrook;
-    if (k.includes('verify'))                          return COMPANY_LOGOS.verify;
-    if (k.includes('curb') || k.includes('appeal'))    return COMPANY_LOGOS.curbappeal;
-    if (k.includes('goodkid') || k.includes('kidtech'))return COMPANY_LOGOS.goodkidtech;
-    if (k.includes('poly') || k.includes('pets'))      return COMPANY_LOGOS.polypets;
+    if (k.includes('fairfield'))                        return 'fairfield';
+    if (k.includes('hillbrook'))                        return 'hillbrook';
+    if (k.includes('verify'))                           return 'verify';
+    if (k.includes('curb') || k.includes('appeal'))     return 'curbappeal';
+    if (k.includes('goodkid') || k.includes('kidtech')) return 'goodkidtech';
+    if (k.includes('poly') || k.includes('pets'))       return 'polypets';
     return null;
+  }
+
+  // Returns { kind: 'img'|'svg'|'none', html: '...' }
+  function logoFor(name) {
+    const slug = slugFor(name);
+    if (!slug) return { kind: 'none', html: '' };
+    if (LOGO_FILES[slug]) {
+      return {
+        kind: 'img',
+        html: `<img src="${LOGO_FILES[slug]}" alt="" loading="lazy"/>`,
+      };
+    }
+    if (COMPANY_LOGOS[slug]) {
+      return { kind: 'svg', html: COMPANY_LOGOS[slug] };
+    }
+    return { kind: 'none', html: '' };
   }
 
   /* ──────────────────────────────────────────────────────────
@@ -810,21 +834,19 @@
         : '<div class="chip-capsule-empty">No projects under this company yet.</div>';
 
       const logo = logoFor(c.name);
-      const chipMark   = logo
-        ? `<div class="company-chip-logo">${logo}</div>`
+      // Chip is now logo-only — no text/count. Full name + count live in the capsule.
+      const chipMark = logo.kind !== 'none'
+        ? `<div class="company-chip-logo is-${logo.kind}">${logo.html}</div>`
         : `<div class="company-chip-dot"></div>`;
-      const capsuleMark = logo
-        ? `<div class="chip-capsule-logo">${logo}</div>`
+      const capsuleMark = logo.kind !== 'none'
+        ? `<div class="chip-capsule-logo is-${logo.kind}">${logo.html}</div>`
         : `<div class="chip-capsule-band"></div>`;
 
       chipHtml += `
         <div class="company-chip" data-cid="${c.id}"
+             title="${escapeHtml(c.name)} · ${projCount} project${projCount === 1 ? '' : 's'}"
              style="left: ${pctX}%; top: ${pctY}%; --c: ${c.color};">
           ${chipMark}
-          <div class="company-chip-text">
-            <div class="company-chip-name">${escapeHtml(c.name)}</div>
-            <div class="company-chip-count">${projCount} project${projCount === 1 ? '' : 's'}</div>
-          </div>
         </div>
         <div class="chip-capsule ${side}" data-cid="${c.id}"
              style="left: ${pctX}%; top: ${pctY}%; --c: ${c.color};">
