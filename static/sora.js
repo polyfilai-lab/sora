@@ -368,10 +368,215 @@
     }
   });
 
+  /* ──────────────────────────────────────────────────────────
+     BRAIN HUB — generates neural mesh, places chips, wires hover
+     ────────────────────────────────────────────────────────── */
+  const BRAIN_CX = 500, BRAIN_CY = 390;
+  const BRAIN_R = 72;
+  const ORBIT_R = 290;
+  let hubData = null;
+  let revealTimer = null;
+  let activeChipId = null;
+
+  function loadHubData() {
+    const el = document.getElementById('hub-data');
+    if (!el) return null;
+    try { return JSON.parse(el.textContent); } catch (_) { return null; }
+  }
+
+  // Seeded RNG so neural mesh is stable per page
+  function rng(seed) {
+    let h = 1779033703 ^ seed.length;
+    for (let i = 0; i < seed.length; i++) {
+      h = Math.imul(h ^ seed.charCodeAt(i), 3432918353);
+      h = (h << 13) | (h >>> 19);
+    }
+    return function () {
+      h = Math.imul(h ^ (h >>> 16), 2246822507);
+      h = Math.imul(h ^ (h >>> 13), 3266489909);
+      return ((h ^= (h >>> 16)) >>> 0) / 4294967295;
+    };
+  }
+
+  function renderNeuralMesh() {
+    const g = document.getElementById('neural-mesh');
+    if (!g) return;
+    const rand = rng('sora-brain-v1');
+    const N = 32;
+    const dots = [];
+    for (let i = 0; i < N; i++) {
+      // Cluster inside the brain core circle (R = 72 around cx, cy)
+      let x, y, ok = false;
+      let tries = 0;
+      while (!ok && tries < 12) {
+        x = BRAIN_CX + (rand() - 0.5) * 130;
+        y = BRAIN_CY + (rand() - 0.5) * 130;
+        const dx = x - BRAIN_CX, dy = y - BRAIN_CY;
+        if (Math.sqrt(dx*dx + dy*dy) < BRAIN_R - 6) ok = true;
+        tries++;
+      }
+      dots.push({ x, y, active: i < 5 });
+    }
+
+    let html = '';
+    // Lines between nearby dots
+    let lineIdx = 0;
+    for (let i = 0; i < dots.length; i++) {
+      for (let j = i + 1; j < dots.length; j++) {
+        const dx = dots[i].x - dots[j].x, dy = dots[i].y - dots[j].y;
+        const d = Math.sqrt(dx*dx + dy*dy);
+        if (d < 38 && rand() < 0.5) {
+          const isPulse = lineIdx < 3;
+          const cls = 'neural-line' + (isPulse ? ' pulse p' + (lineIdx + 1) : '');
+          html += `<line class="${cls}" x1="${dots[i].x.toFixed(1)}" y1="${dots[i].y.toFixed(1)}" x2="${dots[j].x.toFixed(1)}" y2="${dots[j].y.toFixed(1)}"/>`;
+          lineIdx++;
+        }
+      }
+    }
+    // Dots on top
+    dots.forEach((d, i) => {
+      const r = d.active ? 1.8 : 1.3;
+      const cls = 'neural-dot' + (d.active ? ' active d' + (i % 5 + 1) : '');
+      html += `<circle class="${cls}" cx="${d.x.toFixed(1)}" cy="${d.y.toFixed(1)}" r="${r}"/>`;
+    });
+    g.innerHTML = html;
+  }
+
+  function placeChipsAndConnectors() {
+    hubData = loadHubData();
+    if (!hubData) return;
+    const companies = hubData.companies || [];
+    if (!companies.length) return;
+
+    const N = companies.length;
+    const chipLayer = document.getElementById('chip-layer');
+    const connectors = document.getElementById('brain-connectors');
+    if (!chipLayer || !connectors) return;
+
+    let chipHtml = '';
+    let connHtml = '';
+
+    companies.forEach((c, i) => {
+      // Distribute around the brain. Start at top, go clockwise.
+      const angle = -Math.PI / 2 + (i / N) * Math.PI * 2;
+      // Anchor point on the brain edge
+      const ax = BRAIN_CX + Math.cos(angle) * (BRAIN_R + 12);
+      const ay = BRAIN_CY + Math.sin(angle) * (BRAIN_R + 12);
+      // Chip target on the orbit
+      const tx = BRAIN_CX + Math.cos(angle) * ORBIT_R;
+      const ty = BRAIN_CY + Math.sin(angle) * ORBIT_R;
+
+      // Convert to percentage of SVG viewBox for the chip layer
+      const pctX = (tx / 1000) * 100;
+      const pctY = (ty / 780) * 100;
+      const projCount = (c.projects || []).length;
+
+      chipHtml += `
+        <div class="company-chip" data-cid="${c.id}"
+             style="left: ${pctX}%; top: ${pctY}%; --c: ${c.color};">
+          <div class="company-chip-dot"></div>
+          <div class="company-chip-text">
+            <div class="company-chip-name">${escapeHtml(c.name)}</div>
+            <div class="company-chip-count">${projCount} project${projCount === 1 ? '' : 's'}</div>
+          </div>
+        </div>`;
+
+      // Bezier connector from brain edge to chip anchor (just inside the chip).
+      // Curl: control point pulled tangentially so it doesn't pass through center.
+      const cx = (ax + tx) / 2, cy = (ay + ty) / 2;
+      const perpX = -Math.sin(angle) * 30, perpY = Math.cos(angle) * 30;
+      const ctrlX = cx + perpX, ctrlY = cy + perpY;
+      const px = BRAIN_CX + Math.cos(angle) * (ORBIT_R - 38);
+      const py = BRAIN_CY + Math.sin(angle) * (ORBIT_R - 38);
+      connHtml += `<path class="brain-connector" data-cid="${c.id}"
+                   d="M${ax.toFixed(1)},${ay.toFixed(1)} Q${ctrlX.toFixed(1)},${ctrlY.toFixed(1)} ${px.toFixed(1)},${py.toFixed(1)}"/>`;
+    });
+
+    chipLayer.innerHTML = chipHtml;
+    connectors.innerHTML = connHtml;
+
+    // Wire chip hover → reveal panel
+    chipLayer.querySelectorAll('.company-chip').forEach(chip => {
+      const cid = chip.dataset.cid;
+      chip.addEventListener('mouseenter', () => showReveal(cid));
+      chip.addEventListener('mouseleave', () => scheduleHide());
+      chip.addEventListener('focus',      () => showReveal(cid));
+      chip.addEventListener('click',      () => showReveal(cid, true));
+    });
+    // Keep panel open while hovering it
+    const panel = document.getElementById('reveal-panel');
+    if (panel) {
+      panel.addEventListener('mouseenter', () => { if (revealTimer) clearTimeout(revealTimer); });
+      panel.addEventListener('mouseleave', () => scheduleHide());
+    }
+  }
+
+  function showReveal(cid, lock) {
+    if (revealTimer) { clearTimeout(revealTimer); revealTimer = null; }
+    if (!hubData) return;
+    const c = hubData.companies.find(x => x.id === cid);
+    if (!c) return;
+
+    activeChipId = cid;
+    document.querySelectorAll('.company-chip').forEach(el => {
+      el.classList.toggle('is-active', el.dataset.cid === cid);
+    });
+    document.querySelectorAll('.brain-connector').forEach(el => {
+      el.classList.toggle('is-hot', el.dataset.cid === cid);
+    });
+
+    const panel = document.getElementById('reveal-panel');
+    const def   = document.getElementById('reveal-default');
+    const cont  = document.getElementById('reveal-content');
+    if (!panel || !def || !cont) return;
+
+    def.style.display = 'none';
+    cont.style.display = 'block';
+    panel.classList.add('is-hot');
+
+    document.getElementById('reveal-band').style.background = c.color;
+    document.getElementById('reveal-band').style.boxShadow = `0 0 16px ${c.color}`;
+    document.getElementById('reveal-eyebrow').textContent = 'Channel';
+    document.getElementById('reveal-name').textContent = c.name;
+    document.getElementById('reveal-tag').textContent = c.tagline || '';
+    const projects = c.projects || [];
+    document.getElementById('reveal-total').textContent = projects.length;
+    document.getElementById('reveal-live').textContent =
+      projects.filter(p => p.status === 'live').length;
+
+    const grid = document.getElementById('reveal-grid');
+    if (!projects.length) {
+      grid.innerHTML = '<div class="reveal-empty">No projects under this company yet. Use ⌘K → + Project to add one.</div>';
+    } else {
+      grid.innerHTML = projects.map(p => {
+        const href = p.url ? `/frame?p=${p.id}` : `/project/${p.id}`;
+        return `
+          <a class="project-card" href="${href}" title="${escapeHtml(p.name)}${p.url ? ' — open in Frame' : ''}">
+            <span class="dot s-${p.status}"></span>
+            <span class="name">${escapeHtml(p.name)}</span>
+            <a class="info-btn" href="/project/${p.id}" onclick="event.stopPropagation()" title="Notes &amp; settings">ⓘ</a>
+          </a>`;
+      }).join('');
+    }
+  }
+
+  function scheduleHide() {
+    revealTimer = setTimeout(() => {
+      document.querySelectorAll('.company-chip').forEach(el => el.classList.remove('is-active'));
+      document.querySelectorAll('.brain-connector').forEach(el => el.classList.remove('is-hot'));
+      const panel = document.getElementById('reveal-panel');
+      if (panel) panel.classList.remove('is-hot');
+      // We keep the *content* visible (so the user can still see the last one)
+      // but dim the panel. Resetting to default would be jarring.
+    }, 280);
+  }
+
   // ── init ─────────────────────────────────────────────────
   function init() {
     setGreeting();
     pingAll();
+    renderNeuralMesh();
+    placeChipsAndConnectors();
   }
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
