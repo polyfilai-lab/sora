@@ -3,27 +3,31 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#e0f2fe">
+  <meta name="theme-color" content="#050810">
   <title>{% block title %}Sora{% endblock %}</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='sora.css') }}">
 </head>
-<body>
+<body class="{% if active == 'frame' %}is-frame{% endif %}">
   <header class="sora-topbar">
     <a href="/" class="sora-brand">
       <span class="sora-mark">S</span>
       <span>
-        <span class="sora-name">Sora</span>
-        <span class="sora-tag">portfolio brain</span>
+        <span class="sora-name">SORA</span>
+        <span class="sora-tag">// Mission Control v1</span>
       </span>
     </a>
     <nav class="sora-topnav">
-      <a href="/"      class="sora-navlink {% if active=='dashboard' %}is-active{% endif %}">Hub</a>
+      <a href="/"      class="sora-navlink {% if active=='dashboard' %}is-active{% endif %}">Control</a>
       <a href="/frame" class="sora-navlink {% if active=='frame'     %}is-active{% endif %}">Frame</a>
     </nav>
-    <div class="sora-clock" id="sora-clock"></div>
+    <div class="sora-clock">
+      <span class="blink"></span>
+      <span id="sora-uptime">SYS</span>
+      <span id="sora-clock">--:--:--</span>
+    </div>
   </header>
 
   <main class="sora-main">
@@ -32,14 +36,20 @@
 
   <script>
     (function(){
-      var el = document.getElementById('sora-clock');
+      var clk = document.getElementById('sora-clock');
+      var up  = document.getElementById('sora-uptime');
+      var bootTime = Date.now();
+      function pad(n){ return String(n).padStart(2,'0'); }
       function tick(){
-        if(!el) return;
         var d = new Date();
-        var pad = function(n){ return String(n).padStart(2,'0'); };
-        el.textContent = pad(d.getHours()) + ':' + pad(d.getMinutes());
+        if (clk) clk.textContent = pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
+        if (up) {
+          var s = Math.floor((Date.now() - bootTime) / 1000);
+          var hh = Math.floor(s / 3600), mm = Math.floor((s % 3600) / 60), ss = s % 60;
+          up.textContent = 'T+' + pad(hh) + ':' + pad(mm) + ':' + pad(ss);
+        }
       }
-      tick(); setInterval(tick, 30000);
+      tick(); setInterval(tick, 1000);
     })();
   </script>
   {% block scripts %}{% endblock %}

@@ -1,152 +1,176 @@
 {% extends "_base.html" %}
 {% set active = 'dashboard' %}
-{% block title %}Sora · Atlas{% endblock %}
+{% block title %}Sora · Mission Control{% endblock %}
 
 {% block content %}
-<!-- ── HERO ──────────────────────────────────────────────── -->
+<!-- ── HERO / MISSION SUMMARY ────────────────────────────── -->
 <section class="sora-hero">
   <div>
     <h1 class="sora-hero-headline">
-      Everything you&rsquo;re <em>building</em>,<br>
-      in one calm view.
+      Portfolio under <em>active observation</em>.
     </h1>
     <p class="sora-hero-sub">
-      Sora is your portfolio cockpit. Every company is a column. Every product
-      is a row. Status, URLs, tokens, ideas — all at a glance, no clicks
-      required.
+      // Mission control for every company, every product, every signal you're tracking.
+      Channels are live, telemetry is flowing, the deck is yours.
     </p>
     <div class="sora-hero-meta">
       <span class="sora-hero-dot"></span>
-      <span>{{ stats.live }} live · {{ stats.building }} in flight · {{ stats.ideas }} ideas</span>
+      <span>SYS NOMINAL · {{ stats.live }} LIVE · {{ stats.building }} IN FLIGHT · {{ stats.ideas }} INCOMING</span>
     </div>
   </div>
 
   <div class="sora-stats">
     <div class="sora-stat">
-      <div class="sora-stat-label">Companies</div>
-      <div class="sora-stat-num">{{ stats.companies }}</div>
+      <div class="sora-stat-label">Channels</div>
+      <div class="sora-stat-num">{{ '%02d'|format(stats.companies) }}</div>
     </div>
     <div class="sora-stat">
-      <div class="sora-stat-label">Projects</div>
-      <div class="sora-stat-num">{{ stats.projects }}</div>
+      <div class="sora-stat-label">Total proj</div>
+      <div class="sora-stat-num">{{ '%02d'|format(stats.projects) }}</div>
     </div>
     <div class="sora-stat">
       <div class="sora-stat-label">In flight</div>
-      <div class="sora-stat-num accent">{{ stats.building }}</div>
+      <div class="sora-stat-num accent">{{ '%02d'|format(stats.building) }}</div>
     </div>
     <div class="sora-stat">
-      <div class="sora-stat-label">Tokens spent</div>
+      <div class="sora-stat-label">Tokens burned</div>
       <div class="sora-stat-num">{{ '{:,}'.format(stats.tokens) }}</div>
     </div>
   </div>
 </section>
 
-<!-- ── QUICK CAPTURE ─────────────────────────────────────── -->
+<!-- ── COMMAND BAR ───────────────────────────────────────── -->
 <div class="sora-quickbar">
   <input id="quick-idea" class="sora-input" type="text"
-         placeholder="An idea drifting through your head — press enter to catch it…"
+         placeholder="// Capture a signal — press enter to log it"
          onkeydown="if(event.key==='Enter') Sora.quickIdea()">
-  <button class="btn btn-sm" onclick="Sora.quickIdea()">Catch idea</button>
+  <button class="btn btn-sm" onclick="Sora.quickIdea()">Catch</button>
   <button class="btn btn-sm btn-primary" onclick="Sora.openNewProject()">+ Project</button>
-  <button class="btn btn-sm" onclick="Sora.openNewCompany()">+ Company</button>
-  <button class="btn btn-sm btn-accent" onclick="Sora.syncRailway()" title="Pull live URLs from Railway">⟲ Sync Railway</button>
+  <button class="btn btn-sm" onclick="Sora.openNewCompany()">+ Channel</button>
+  <button class="btn btn-sm btn-accent" onclick="Sora.syncRailway()" title="Pull live URLs from Railway">⟲ Sync</button>
 </div>
 
-<div id="sync-panel" style="display:none; margin: 4px 0 18px; padding: 18px 22px; border-radius: 16px;
-                             background: var(--surface-solid); border: 1px solid var(--edge-soft);
-                             box-shadow: var(--shadow-2);"></div>
+<div id="sync-panel" style="display:none; margin: 6px 0 14px; padding: 14px 18px; border-radius: 8px;
+                             background: var(--bg-panel); border: 1px solid var(--edge);"></div>
 
-<!-- ── ATLAS — portfolio columns ─────────────────────────── -->
+<!-- ── MISSION CONTROL GRID ──────────────────────────────── -->
 <div class="sora-section">
-  <div class="sora-section-mark">I · Atlas</div>
-  <h2>Your portfolio</h2>
+  <span class="sora-section-mark">CH · 01-{{ '%02d'|format(stats.companies) }}</span>
+  <h2>Active channels</h2>
   <div class="sora-section-rule"></div>
-  <div class="sora-section-hint">{{ stats.companies }} companies · {{ stats.projects }} projects</div>
+  <div class="sora-section-hint">{{ stats.projects }} READOUTS</div>
 </div>
 
-<div class="atlas-scroll">
-  <div class="atlas-row">
-    {% for company in companies %}
-      {% set projects = by_company.get(company.id, []) %}
-      {% set live = projects | selectattr('status', 'equalto', 'live') | list | length %}
-      <article class="atlas-col" style="--c: {{ company.color }};">
-        <header class="atlas-col-head">
-          <div class="atlas-col-band"></div>
-          <div class="atlas-col-eyebrow">{{ '%02d'|format(loop.index) }} · Company</div>
-          <h3 class="atlas-col-name">{{ company.name }}</h3>
-          {% if company.tagline %}<div class="atlas-col-tag">{{ company.tagline }}</div>{% endif %}
-          <div class="atlas-col-meta">
-            <span><strong>{{ projects|length }}</strong> project{{ '' if projects|length == 1 else 's' }}</span>
-            {% if live %}<span class="atlas-col-live">●&nbsp;{{ live }} live</span>{% endif %}
+<div class="mc-grid">
+  {% for company in companies %}
+    {% set projects = by_company.get(company.id, []) %}
+    {% set live     = projects | selectattr('status', 'equalto', 'live')     | list | length %}
+    {% set building = projects | selectattr('status', 'equalto', 'building') | list | length %}
+    {% set idea     = projects | selectattr('status', 'equalto', 'idea')     | list | length %}
+    {% set paused   = projects | selectattr('status', 'equalto', 'paused')   | list | length %}
+    {% set shipped  = projects | selectattr('status', 'equalto', 'shipped')  | list | length %}
+    {% set total    = projects | length %}
+    {% set tokens   = projects | sum(attribute='tokens_used') %}
+
+    <article class="mc-channel" style="--c: {{ company.color }};">
+      <header class="mc-head">
+        <div>
+          <div class="mc-channel-id">CH {{ '%02d'|format(loop.index) }} · {{ company.name|truncate(20, true, '…') }}</div>
+          <div class="mc-channel-name">{{ company.name }}</div>
+          {% if company.tagline %}<div class="mc-channel-tag">// {{ company.tagline }}</div>{% endif %}
+        </div>
+        <div class="mc-channel-readout">
+          <div class="big">{{ '%02d'|format(total) }}</div>
+          <div class="small">{{ '{:,}'.format(tokens or 0) }} TOK</div>
+        </div>
+      </header>
+
+      <!-- Telemetry: sparkline + segmented status bar -->
+      <div class="mc-telemetry">
+        <div class="mc-spark">
+          <div class="mc-spark-label">Activity · 14d</div>
+          <svg viewBox="0 0 120 28" preserveAspectRatio="none" class="mc-spark-svg"
+               data-seed="{{ company.id }}" data-color="{{ company.color }}"></svg>
+        </div>
+        <div class="mc-bar">
+          <div class="mc-bar-label">Status mix</div>
+          <div class="mc-bar-track">
+            {% if live     %}<div class="mc-bar-seg s-live"     style="flex: {{ live     }};"></div>{% endif %}
+            {% if building %}<div class="mc-bar-seg s-building" style="flex: {{ building }};"></div>{% endif %}
+            {% if idea     %}<div class="mc-bar-seg s-idea"     style="flex: {{ idea     }};"></div>{% endif %}
+            {% if paused   %}<div class="mc-bar-seg s-paused"   style="flex: {{ paused   }};"></div>{% endif %}
+            {% if shipped  %}<div class="mc-bar-seg s-shipped"  style="flex: {{ shipped  }};"></div>{% endif %}
+            {% if total == 0 %}<div style="flex: 1; opacity: 0.18; background: var(--ink-low);"></div>{% endif %}
           </div>
-        </header>
-
-        <ul class="atlas-projects">
-          {% for p in projects %}
-            <li>
-              <a class="atlas-project" href="/project/{{ p.id }}">
-                <span class="atlas-project-pulse s-{{ p.status }}"></span>
-                <span class="atlas-project-main">
-                  <span class="atlas-project-name">{{ p.name }}</span>
-                  {% if p.tagline %}<span class="atlas-project-tag">{{ p.tagline }}</span>{% endif %}
-                </span>
-                <span class="atlas-project-meta">
-                  {% if p.url %}<span class="sora-ping-dot" data-ping="{{ p.url }}"></span>{% endif %}
-                  <span class="atlas-project-status">{{ p.status }}</span>
-                </span>
-              </a>
-            </li>
-          {% else %}
-            <li class="atlas-empty">No projects under this company yet.</li>
-          {% endfor %}
-        </ul>
-
-        <footer class="atlas-col-foot">
-          <button class="btn btn-sm btn-ghost" onclick="Sora.openNewProject('{{ company.id }}')">+ Add project</button>
-          <button class="btn btn-sm btn-ghost" onclick="Sora.editCompany('{{ company.id }}')">Edit</button>
-        </footer>
-      </article>
-    {% endfor %}
-
-    {# Unassigned column — only show if there are orphans #}
-    {% set orphans = by_company.get(none, []) %}
-    {% if orphans %}
-      <article class="atlas-col" style="--c: #94a3b8;">
-        <header class="atlas-col-head">
-          <div class="atlas-col-band"></div>
-          <div class="atlas-col-eyebrow">— · Unassigned</div>
-          <h3 class="atlas-col-name">Loose ends</h3>
-          <div class="atlas-col-tag">Projects not yet attached to a company.</div>
-          <div class="atlas-col-meta">
-            <span><strong>{{ orphans|length }}</strong> project{{ '' if orphans|length == 1 else 's' }}</span>
+          <div class="mc-bar-key">
+            {% if live     %}<span class="k-live">{{ live }} live</span>{% endif %}
+            {% if building %}<span class="k-building">{{ building }} build</span>{% endif %}
+            {% if idea     %}<span class="k-idea">{{ idea }} idea</span>{% endif %}
+            {% if paused   %}<span class="k-paused">{{ paused }}</span>{% endif %}
+            {% if shipped  %}<span class="k-shipped">{{ shipped }}</span>{% endif %}
           </div>
-        </header>
-        <ul class="atlas-projects">
-          {% for p in orphans %}
-            <li>
-              <a class="atlas-project" href="/project/{{ p.id }}">
-                <span class="atlas-project-pulse s-{{ p.status }}"></span>
-                <span class="atlas-project-main">
-                  <span class="atlas-project-name">{{ p.name }}</span>
-                  {% if p.tagline %}<span class="atlas-project-tag">{{ p.tagline }}</span>{% endif %}
-                </span>
-                <span class="atlas-project-meta">
-                  {% if p.url %}<span class="sora-ping-dot" data-ping="{{ p.url }}"></span>{% endif %}
-                  <span class="atlas-project-status">{{ p.status }}</span>
-                </span>
-              </a>
-            </li>
-          {% endfor %}
-        </ul>
-      </article>
-    {% endif %}
-  </div>
+        </div>
+      </div>
+
+      <!-- Project readouts -->
+      <div class="mc-projects">
+        {% for p in projects %}
+          <a class="mc-project" href="/project/{{ p.id }}">
+            <span class="mc-project-status-dot s-{{ p.status }}"></span>
+            <span>
+              <span class="mc-project-name">{{ p.name }}</span>
+              {% if p.tagline %}<span class="mc-project-tag">{{ p.tagline }}</span>{% endif %}
+            </span>
+            <span class="mc-project-latency">
+              {% if p.url %}<span class="sora-ping-dot" data-ping="{{ p.url }}"></span>—{% else %}NO URL{% endif %}
+            </span>
+            <span class="mc-project-status s-{{ p.status }}">{{ p.status }}</span>
+          </a>
+        {% else %}
+          <div class="mc-empty">// NO READOUTS</div>
+        {% endfor %}
+      </div>
+
+      <footer class="mc-foot">
+        <button class="btn btn-sm" onclick="Sora.openNewProject('{{ company.id }}')">+ Project</button>
+        <button class="btn btn-sm btn-ghost" onclick="Sora.editCompany('{{ company.id }}')">Edit</button>
+      </footer>
+    </article>
+  {% endfor %}
+
+  {# Unassigned #}
+  {% set orphans = by_company.get(none, []) %}
+  {% if orphans %}
+    <article class="mc-channel" style="--c: #94a3b8;">
+      <header class="mc-head">
+        <div>
+          <div class="mc-channel-id">CH — · UNASSIGNED</div>
+          <div class="mc-channel-name">Loose ends</div>
+          <div class="mc-channel-tag">// Projects not yet attached to a channel</div>
+        </div>
+        <div class="mc-channel-readout">
+          <div class="big">{{ '%02d'|format(orphans|length) }}</div>
+          <div class="small">orphans</div>
+        </div>
+      </header>
+      <div class="mc-projects" style="padding-top: 12px;">
+        {% for p in orphans %}
+          <a class="mc-project" href="/project/{{ p.id }}">
+            <span class="mc-project-status-dot s-{{ p.status }}"></span>
+            <span><span class="mc-project-name">{{ p.name }}</span></span>
+            <span class="mc-project-latency">—</span>
+            <span class="mc-project-status s-{{ p.status }}">{{ p.status }}</span>
+          </a>
+        {% endfor %}
+      </div>
+    </article>
+  {% endif %}
 </div>
 
-<!-- ── IDEAS INBOX ───────────────────────────────────────── -->
+<!-- ── DRIFT // INCOMING SIGNALS ─────────────────────────── -->
 <div class="sora-section">
-  <div class="sora-section-mark">II · Drift</div>
-  <h2>Ideas you&rsquo;re noodling on</h2>
+  <span class="sora-section-mark">SIG · DRIFT</span>
+  <h2>Incoming signals</h2>
   <div class="sora-section-rule"></div>
   <div class="sora-section-hint">{{ ideas|length }} captured</div>
 </div>
@@ -162,26 +186,20 @@
       </div>
     {% endfor %}
   {% else %}
-    <div class="sora-empty">Nothing drifting yet. Use the field above to capture a thought.</div>
+    <div class="sora-empty">// NO SIGNALS — use the command bar to log one</div>
   {% endif %}
 </div>
 
-<!-- ── MODALS (new project / new company) ───────────────── -->
+<!-- ── MODALS ────────────────────────────────────────────── -->
 <div class="sora-modal-bg" id="modal-project">
   <div class="sora-modal">
-    <h3>New project</h3>
+    <h3>// New project</h3>
     <div class="sora-form">
-      <div>
-        <label class="sora-label">Name</label>
-        <input class="sora-input" id="np-name" type="text" placeholder="e.g. Hillbrook Concierge v2">
-      </div>
-      <div>
-        <label class="sora-label">Tagline</label>
-        <input class="sora-input" id="np-tagline" type="text" placeholder="One line — what is this?">
-      </div>
+      <div><label class="sora-label">Name</label><input class="sora-input" id="np-name" type="text" placeholder="e.g. Hillbrook Concierge v2"></div>
+      <div><label class="sora-label">Tagline</label><input class="sora-input" id="np-tagline" type="text" placeholder="One line — what is this?"></div>
       <div class="sora-row-inline">
         <div style="flex:1;">
-          <label class="sora-label">Company</label>
+          <label class="sora-label">Channel</label>
           <select class="sora-select" id="np-company">
             <option value="">— unassigned —</option>
             {% for c in companies %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}
@@ -198,14 +216,8 @@
           </select>
         </div>
       </div>
-      <div>
-        <label class="sora-label">URL (optional)</label>
-        <input class="sora-input" id="np-url" type="text" placeholder="https://…">
-      </div>
-      <div>
-        <label class="sora-label">Notes</label>
-        <textarea class="sora-textarea" id="np-notes" placeholder="What is this? Where does it live?"></textarea>
-      </div>
+      <div><label class="sora-label">URL (optional)</label><input class="sora-input" id="np-url" type="text" placeholder="https://…"></div>
+      <div><label class="sora-label">Notes</label><textarea class="sora-textarea" id="np-notes"></textarea></div>
     </div>
     <div class="sora-modal-actions">
       <button class="btn btn-ghost btn-sm" onclick="Sora.closeModal('modal-project')">Cancel</button>
@@ -216,24 +228,12 @@
 
 <div class="sora-modal-bg" id="modal-company">
   <div class="sora-modal">
-    <h3>New company</h3>
+    <h3>// New channel</h3>
     <div class="sora-form">
-      <div>
-        <label class="sora-label">Name</label>
-        <input class="sora-input" id="nc-name" type="text">
-      </div>
-      <div>
-        <label class="sora-label">Tagline</label>
-        <input class="sora-input" id="nc-tagline" type="text">
-      </div>
-      <div>
-        <label class="sora-label">Accent color</label>
-        <input class="sora-input" id="nc-color" type="color" value="#0ea5e9" style="height:46px; padding:6px;">
-      </div>
-      <div>
-        <label class="sora-label">Notes</label>
-        <textarea class="sora-textarea" id="nc-notes"></textarea>
-      </div>
+      <div><label class="sora-label">Name</label><input class="sora-input" id="nc-name" type="text"></div>
+      <div><label class="sora-label">Tagline</label><input class="sora-input" id="nc-tagline" type="text"></div>
+      <div><label class="sora-label">Accent color</label><input class="sora-input" id="nc-color" type="color" value="#06b6d4" style="height:46px; padding:6px;"></div>
+      <div><label class="sora-label">Notes</label><textarea class="sora-textarea" id="nc-notes"></textarea></div>
     </div>
     <div class="sora-modal-actions">
       <button class="btn btn-ghost btn-sm" onclick="Sora.closeModal('modal-company')">Cancel</button>
@@ -245,4 +245,48 @@
 
 {% block scripts %}
 <script src="{{ url_for('static', filename='sora.js') }}"></script>
+<script>
+// Decorative sparklines for each channel — seeded random walk so they're
+// stable per-company but vary between channels. (Real time-series data
+// can plug in later from the changelog log timestamps.)
+(function () {
+  function seedRand(seedStr) {
+    let h = 2166136261;
+    for (let i = 0; i < seedStr.length; i++) {
+      h ^= seedStr.charCodeAt(i);
+      h = Math.imul(h, 16777619);
+    }
+    return function () {
+      h = Math.imul(h ^ (h >>> 16), 2246822507);
+      h = Math.imul(h ^ (h >>> 13), 3266489909);
+      return ((h ^= (h >>> 16)) >>> 0) / 4294967295;
+    };
+  }
+  document.querySelectorAll('.mc-spark-svg').forEach(svg => {
+    const seed = svg.dataset.seed || 'x';
+    const color = svg.dataset.color || '#06b6d4';
+    const rand = seedRand(seed);
+    const N = 14, W = 120, H = 28;
+    const pts = [];
+    let y = 14 + (rand() - 0.5) * 12;
+    for (let i = 0; i < N; i++) {
+      y += (rand() - 0.5) * 6;
+      y = Math.max(4, Math.min(H - 4, y));
+      pts.push({ x: (i / (N - 1)) * W, y });
+    }
+    const d = pts.map((p, i) => (i === 0 ? `M${p.x.toFixed(1)},${p.y.toFixed(1)}` : `L${p.x.toFixed(1)},${p.y.toFixed(1)}`)).join(' ');
+    const fill = `${d} L${W},${H} L0,${H} Z`;
+    svg.innerHTML = `
+      <defs>
+        <linearGradient id="sg-${seed}" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="${color}" stop-opacity="0.35"/>
+          <stop offset="100%" stop-color="${color}" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      <path d="${fill}" fill="url(#sg-${seed})" stroke="none"/>
+      <path d="${d}" fill="none" stroke="${color}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    `;
+  });
+})();
+</script>
 {% endblock %}
