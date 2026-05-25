@@ -459,17 +459,32 @@
     companies.forEach((c, i) => {
       // Distribute around the brain. Start at top, go clockwise.
       const angle = -Math.PI / 2 + (i / N) * Math.PI * 2;
-      // Anchor point on the brain edge
       const ax = BRAIN_CX + Math.cos(angle) * (BRAIN_R + 12);
       const ay = BRAIN_CY + Math.sin(angle) * (BRAIN_R + 12);
-      // Chip target on the orbit
       const tx = BRAIN_CX + Math.cos(angle) * ORBIT_R;
       const ty = BRAIN_CY + Math.sin(angle) * ORBIT_R;
 
-      // Convert to percentage of SVG viewBox for the chip layer
       const pctX = (tx / 1000) * 100;
       const pctY = (ty / 780) * 100;
+
+      // Capsule side: chip on right half of brain → capsule grows right; left → left
+      const side = pctX >= 50 ? 'on-right' : 'on-left';
+
       const projCount = (c.projects || []).length;
+      const liveCount = (c.projects || []).filter(p => p.status === 'live').length;
+
+      // Build the capsule project list HTML
+      const projectsHtml = (c.projects || []).length
+        ? (c.projects || []).map(p => {
+            const href = p.url ? `/frame?p=${p.id}` : `/project/${p.id}`;
+            return `
+              <a class="chip-capsule-item" href="${href}" title="${escapeHtml(p.name)}${p.url ? ' — open in Frame' : ''}">
+                <span class="dot s-${p.status}"></span>
+                <span class="name">${escapeHtml(p.name)}</span>
+                <a class="info" href="/project/${p.id}" onclick="event.stopPropagation()" title="Notes &amp; settings">ⓘ</a>
+              </a>`;
+          }).join('')
+        : '<div class="chip-capsule-empty">No projects under this company yet.</div>';
 
       chipHtml += `
         <div class="company-chip" data-cid="${c.id}"
@@ -479,13 +494,26 @@
             <div class="company-chip-name">${escapeHtml(c.name)}</div>
             <div class="company-chip-count">${projCount} project${projCount === 1 ? '' : 's'}</div>
           </div>
+        </div>
+        <div class="chip-capsule ${side}" data-cid="${c.id}"
+             style="left: ${pctX}%; top: ${pctY}%; --c: ${c.color};">
+          <div class="chip-capsule-head">
+            <div class="chip-capsule-band"></div>
+            <div class="chip-capsule-titles">
+              <div class="chip-capsule-name">${escapeHtml(c.name)}</div>
+              ${c.tagline ? `<div class="chip-capsule-tag">${escapeHtml(c.tagline)}</div>` : ''}
+            </div>
+            <div class="chip-capsule-count">${projCount}${liveCount ? ` · ${liveCount} live` : ''}</div>
+          </div>
+          <div class="chip-capsule-list">
+            ${projectsHtml}
+          </div>
         </div>`;
 
-      // Bezier connector from brain edge to chip anchor (just inside the chip).
-      // Curl: control point pulled tangentially so it doesn't pass through center.
-      const cx = (ax + tx) / 2, cy = (ay + ty) / 2;
+      // Bezier connector from brain edge to just inside the chip
+      const cmx = (ax + tx) / 2, cmy = (ay + ty) / 2;
       const perpX = -Math.sin(angle) * 30, perpY = Math.cos(angle) * 30;
-      const ctrlX = cx + perpX, ctrlY = cy + perpY;
+      const ctrlX = cmx + perpX, ctrlY = cmy + perpY;
       const px = BRAIN_CX + Math.cos(angle) * (ORBIT_R - 38);
       const py = BRAIN_CY + Math.sin(angle) * (ORBIT_R - 38);
       connHtml += `<path class="brain-connector" data-cid="${c.id}"
@@ -495,28 +523,25 @@
     chipLayer.innerHTML = chipHtml;
     connectors.innerHTML = connHtml;
 
-    // Wire chip hover → reveal panel
+    // Hover wiring (chip + capsule share the data-cid so they coordinate)
     chipLayer.querySelectorAll('.company-chip').forEach(chip => {
       const cid = chip.dataset.cid;
-      chip.addEventListener('mouseenter', () => showReveal(cid));
-      chip.addEventListener('mouseleave', () => scheduleHide());
-      chip.addEventListener('focus',      () => showReveal(cid));
-      chip.addEventListener('click',      () => showReveal(cid, true));
+      const capsule = chipLayer.querySelector('.chip-capsule[data-cid="' + cid + '"]');
+      const onEnter = () => openCapsule(cid);
+      const onLeave = () => scheduleCloseCapsule(cid);
+      chip.addEventListener('mouseenter', onEnter);
+      chip.addEventListener('mouseleave', onLeave);
+      chip.addEventListener('focus',      onEnter);
+      chip.addEventListener('blur',       onLeave);
+      if (capsule) {
+        capsule.addEventListener('mouseenter', onEnter);
+        capsule.addEventListener('mouseleave', onLeave);
+      }
     });
-    // Keep panel open while hovering it
-    const panel = document.getElementById('reveal-panel');
-    if (panel) {
-      panel.addEventListener('mouseenter', () => { if (revealTimer) clearTimeout(revealTimer); });
-      panel.addEventListener('mouseleave', () => scheduleHide());
-    }
   }
 
-  function showReveal(cid, lock) {
+  function openCapsule(cid) {
     if (revealTimer) { clearTimeout(revealTimer); revealTimer = null; }
-    if (!hubData) return;
-    const c = hubData.companies.find(x => x.id === cid);
-    if (!c) return;
-
     activeChipId = cid;
     document.querySelectorAll('.company-chip').forEach(el => {
       el.classList.toggle('is-active', el.dataset.cid === cid);
@@ -524,51 +549,23 @@
     document.querySelectorAll('.brain-connector').forEach(el => {
       el.classList.toggle('is-hot', el.dataset.cid === cid);
     });
-
-    const panel = document.getElementById('reveal-panel');
-    const def   = document.getElementById('reveal-default');
-    const cont  = document.getElementById('reveal-content');
-    if (!panel || !def || !cont) return;
-
-    def.style.display = 'none';
-    cont.style.display = 'block';
-    panel.classList.add('is-hot');
-
-    document.getElementById('reveal-band').style.background = c.color;
-    document.getElementById('reveal-band').style.boxShadow = `0 0 16px ${c.color}`;
-    document.getElementById('reveal-eyebrow').textContent = 'Channel';
-    document.getElementById('reveal-name').textContent = c.name;
-    document.getElementById('reveal-tag').textContent = c.tagline || '';
-    const projects = c.projects || [];
-    document.getElementById('reveal-total').textContent = projects.length;
-    document.getElementById('reveal-live').textContent =
-      projects.filter(p => p.status === 'live').length;
-
-    const grid = document.getElementById('reveal-grid');
-    if (!projects.length) {
-      grid.innerHTML = '<div class="reveal-empty">No projects under this company yet. Use ⌘K → + Project to add one.</div>';
-    } else {
-      grid.innerHTML = projects.map(p => {
-        const href = p.url ? `/frame?p=${p.id}` : `/project/${p.id}`;
-        return `
-          <a class="project-card" href="${href}" title="${escapeHtml(p.name)}${p.url ? ' — open in Frame' : ''}">
-            <span class="dot s-${p.status}"></span>
-            <span class="name">${escapeHtml(p.name)}</span>
-            <a class="info-btn" href="/project/${p.id}" onclick="event.stopPropagation()" title="Notes &amp; settings">ⓘ</a>
-          </a>`;
-      }).join('');
-    }
+    document.querySelectorAll('.chip-capsule').forEach(el => {
+      el.classList.toggle('is-open', el.dataset.cid === cid);
+    });
   }
 
-  function scheduleHide() {
+  function scheduleCloseCapsule(cid) {
+    if (revealTimer) clearTimeout(revealTimer);
     revealTimer = setTimeout(() => {
-      document.querySelectorAll('.company-chip').forEach(el => el.classList.remove('is-active'));
-      document.querySelectorAll('.brain-connector').forEach(el => el.classList.remove('is-hot'));
-      const panel = document.getElementById('reveal-panel');
-      if (panel) panel.classList.remove('is-hot');
-      // We keep the *content* visible (so the user can still see the last one)
-      // but dim the panel. Resetting to default would be jarring.
-    }, 280);
+      // Only close if this chip is still the active one
+      if (activeChipId === cid) {
+        document.querySelectorAll('.company-chip').forEach(el => el.classList.remove('is-active'));
+        document.querySelectorAll('.brain-connector').forEach(el => el.classList.remove('is-hot'));
+        document.querySelectorAll('.chip-capsule').forEach(el => el.classList.remove('is-open'));
+        activeChipId = null;
+      }
+      revealTimer = null;
+    }, 220);
   }
 
   // ── init ─────────────────────────────────────────────────

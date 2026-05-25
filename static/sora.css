@@ -355,8 +355,152 @@ input, select, textarea { font-family: inherit; color: inherit; }
   margin-top: 2px;
 }
 
-/* ── Reveal panel — slides in below the brain on hover ──── */
+/* ── Chip capsule (project popup) ─────────────────────────── */
+.chip-capsule {
+  position: absolute;
+  width: 280px;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(255, 255, 255, 0.95);
+  border-radius: 18px;
+  padding: 14px 16px;
+  box-shadow: var(--shadow-lg);
+  backdrop-filter: blur(18px) saturate(160%);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 20;
+  transition: opacity 0.22s ease,
+              transform 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.chip-capsule.on-right {
+  transform-origin: left center;
+  transform: translateY(-50%) translateX(72px) scale(0.94);
+}
+.chip-capsule.on-right.is-open {
+  transform: translateY(-50%) translateX(72px) scale(1);
+}
+.chip-capsule.on-left {
+  transform-origin: right center;
+  transform: translateY(-50%) translateX(-100%) translateX(-72px) scale(0.94);
+}
+.chip-capsule.on-left.is-open {
+  transform: translateY(-50%) translateX(-100%) translateX(-72px) scale(1);
+}
+.chip-capsule.is-open {
+  opacity: 1;
+  pointer-events: auto;
+}
+.chip-capsule-head {
+  display: flex; align-items: center; gap: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 8px;
+}
+.chip-capsule-band {
+  width: 4px; height: 28px;
+  border-radius: 99px;
+  background: var(--c, var(--sky-500));
+  box-shadow: 0 0 10px var(--c, var(--sky-500));
+  flex-shrink: 0;
+}
+.chip-capsule-titles {
+  flex: 1; min-width: 0;
+}
+.chip-capsule-name {
+  font-weight: 700; font-size: 14px;
+  letter-spacing: -0.015em;
+  color: var(--ink);
+  line-height: 1.1;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.chip-capsule-tag {
+  font-size: 11.5px;
+  color: var(--ink-4);
+  margin-top: 2px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.chip-capsule-count {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--ink-3);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  background: var(--sky-50);
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+.chip-capsule-list {
+  list-style: none;
+  margin: 0; padding: 0;
+  max-height: 360px;
+  overflow-y: auto;
+  /* hide scrollbar on webkit */
+  scrollbar-width: thin;
+  scrollbar-color: var(--ink-5) transparent;
+}
+.chip-capsule-list::-webkit-scrollbar { width: 6px; }
+.chip-capsule-list::-webkit-scrollbar-track { background: transparent; }
+.chip-capsule-list::-webkit-scrollbar-thumb {
+  background: var(--ink-5);
+  border-radius: 99px;
+}
+.chip-capsule-item {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 8px;
+  align-items: center;
+  padding: 7px 9px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  color: var(--ink-2);
+  text-decoration: none;
+  transition: background 0.12s;
+}
+.chip-capsule-item:hover {
+  background: var(--sky-50);
+  color: var(--ink);
+}
+.chip-capsule-item .dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  flex-shrink: 0;
+}
+.chip-capsule-item .dot.s-idea     { background: var(--s-idea); }
+.chip-capsule-item .dot.s-building { background: var(--s-building); box-shadow: 0 0 6px var(--s-building); }
+.chip-capsule-item .dot.s-live     { background: var(--s-live); box-shadow: 0 0 6px var(--s-live); }
+.chip-capsule-item .dot.s-paused   { background: var(--s-paused); }
+.chip-capsule-item .dot.s-shipped  { background: var(--s-shipped); }
+.chip-capsule-item .name {
+  font-weight: 500;
+  color: var(--ink);
+  letter-spacing: -0.005em;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  min-width: 0;
+}
+.chip-capsule-item:hover .name { color: var(--sky-700); }
+.chip-capsule-item .info {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 22px; height: 22px;
+  border-radius: 5px;
+  font-size: 12px;
+  color: var(--ink-4);
+  background: transparent;
+  transition: all 0.12s;
+}
+.chip-capsule-item .info:hover {
+  color: var(--sky-700);
+  background: white;
+}
+.chip-capsule-empty {
+  text-align: center;
+  padding: 18px 8px;
+  font-size: 12.5px;
+  color: var(--ink-4);
+}
+
+/* Reveal panel — kept for legacy safety, hidden by default now */
 .reveal-panel {
+  display: none;
   margin-top: 12px;
   width: 100%; max-width: 980px;
   min-height: 200px;

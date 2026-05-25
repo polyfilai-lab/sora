@@ -54,34 +54,17 @@
     </div>
   </div>
 
-  <!-- Reveal panel (changes based on hovered chip) -->
-  <div class="reveal-panel" id="reveal-panel">
-    <div class="reveal-default" id="reveal-default">
-      Hover any company above to see its projects.
-    </div>
-    <div id="reveal-content" style="display:none;">
-      <div class="reveal-head">
-        <div class="reveal-band" id="reveal-band"></div>
-        <div>
-          <div class="reveal-eyebrow" id="reveal-eyebrow">Channel</div>
-          <h3 class="reveal-name" id="reveal-name">—</h3>
-          <div class="reveal-tag" id="reveal-tag"></div>
-        </div>
-        <div class="reveal-meta">
-          <div class="reveal-meta-cell">
-            <span class="num" id="reveal-total">—</span>
-            <span class="label">Projects</span>
-          </div>
-          <div class="reveal-meta-cell">
-            <span class="num is-live" id="reveal-live">—</span>
-            <span class="label">Live</span>
-          </div>
-        </div>
-      </div>
-      <div class="reveal-grid" id="reveal-grid"></div>
-    </div>
-  </div>
+  <div class="brain-hint" id="brain-hint">Hover any company to see its projects.</div>
 </section>
+
+<style>
+.brain-hint {
+  margin-top: 18px;
+  font-size: 12.5px;
+  color: var(--ink-4);
+  letter-spacing: 0.01em;
+}
+</style>
 
 <!-- ── BELOW: in-flight + ideas ────────────────────────────── -->
 <section class="ideas-section">
