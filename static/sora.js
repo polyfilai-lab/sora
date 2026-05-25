@@ -398,81 +398,208 @@
     };
   }
 
-  // Libra constellation — 4 main stars (α, β, γ, σ) form the balance / kite,
-  // plus a handful of dim ambient stars for context. Positioned inside the
-  // brain core (radius 72 around BRAIN_CX, BRAIN_CY).
-  function renderLibra() {
+  // 3D Libra constellation — the actual balance/scales shape, rotating in
+  // 3-space with perspective projection. Each star carries (x, y, z) coords
+  // relative to the brain center, plus its base brightness.
+  //
+  //   ▲     β            <- top of crossbar
+  //   │   ╱   ╲
+  //   │  α─────γ          <- crossbar (α – β – γ)
+  //   │  │     │
+  //   │  L     R          <- chains hanging from the bar ends
+  //   │ ╱╲   ╱╲
+  //   │(  σ)(  τ)         <- balance pans
+  //   ▼
+  let constellation = null;          // { stars: [...], lines: [...] }
+  let constellationRotY = 0;
+  const CONSTELLATION_TILT = 0.18;
+  const CONSTELLATION_FOCAL = 260;
+
+  function setupConstellation3D() {
     const g = document.getElementById('neural-mesh');
     if (!g) return;
 
-    const CX = BRAIN_CX, CY = BRAIN_CY;
-    // Stars in a 100×100 normalized space, then mapped to brain coords.
-    // Real Libra: β (top, brightest), α (lower-left), γ (lower-right), σ (bottom)
-    const SCALE = 1.05; // half-width of the constellation in svg units
-    function pos(nx, ny) {
-      return {
-        x: CX + (nx - 50) * SCALE,
-        y: CY + (ny - 50) * SCALE,
-      };
-    }
-    const beta  = pos(50,  -2);   // top apex of the scale
-    const alpha = pos(  4, 38);   // lower-left
-    const gamma = pos(96, 38);    // lower-right
-    const sigma = pos(50, 70);    // bottom
-    const upsilon = pos(-14, 60); // far left dimmer star
+    // ── stars (x, y, z) — y is *down* in SVG, so negative y is up ───
+    const S = [
+      // ── crossbar (the rod of the scale) ──────────────────
+      { id: 'alpha',   x: -56, y: -42, z:  18, r: 2.6, bright: true,  b: 2 }, // α Librae
+      { id: 'beta',    x:   0, y: -56, z:  24, r: 3.0, bright: true,  b: 1 }, // β Librae (brightest)
+      { id: 'gamma',   x:  56, y: -42, z:  18, r: 2.2, bright: true,  b: 3 }, // γ Librae
+      { id: 'pivot',   x:   0, y: -28, z:  12, r: 1.8, bright: true,  b: 4 }, // center pivot
 
-    const lines = [
-      [alpha, beta],
-      [beta,  gamma],
-      [gamma, sigma],
-      [sigma, alpha],
-      [alpha, upsilon],
+      // ── chains hanging off each end ─────────────────────
+      { id: 'L_top',   x: -50, y: -14, z:  10, r: 1.2 },
+      { id: 'L_mid',   x: -48, y:   6, z:   6, r: 1.1 },
+      { id: 'R_top',   x:  50, y: -14, z:  10, r: 1.2 },
+      { id: 'R_mid',   x:  48, y:   6, z:   6, r: 1.1 },
+
+      // ── left balance pan (curve open upward, ⌣) ─────────
+      { id: 'LP_nw',   x: -72, y:  16, z:  -4, r: 1.6 },
+      { id: 'LP_w',    x: -78, y:  30, z:  -8, r: 1.5 },
+      { id: 'LP_sw',   x: -74, y:  46, z:  -8, r: 1.4 },
+      { id: 'sigma',   x: -54, y:  54, z:  -4, r: 2.2, bright: true,  b: 5 }, // σ Librae
+      { id: 'LP_se',   x: -34, y:  46, z:   0, r: 1.4 },
+      { id: 'LP_e',    x: -28, y:  30, z:   2, r: 1.4 },
+      { id: 'LP_ne',   x: -32, y:  16, z:   2, r: 1.3 },
+
+      // ── right balance pan (mirror) ──────────────────────
+      { id: 'RP_ne',   x:  72, y:  16, z:  -4, r: 1.6 },
+      { id: 'RP_e',    x:  78, y:  30, z:  -8, r: 1.5 },
+      { id: 'RP_se',   x:  74, y:  46, z:  -8, r: 1.4 },
+      { id: 'tau',     x:  54, y:  54, z:  -4, r: 2.0, bright: true,  b: 6 }, // τ Librae
+      { id: 'RP_sw',   x:  34, y:  46, z:   0, r: 1.4 },
+      { id: 'RP_w',    x:  28, y:  30, z:   2, r: 1.4 },
+      { id: 'RP_nw',   x:  32, y:  16, z:   2, r: 1.3 },
     ];
 
-    const stars = [
-      { p: beta,    r: 2.8, bright: true, b: 1 },  // brightest
-      { p: alpha,   r: 2.4, bright: true, b: 2 },
-      { p: sigma,   r: 2.1, bright: true, b: 3 },
-      { p: gamma,   r: 1.9, bright: true, b: 4 },
-      { p: upsilon, r: 1.6, bright: false },
+    // ── lines (id pairs) ──────────────────────────────────
+    const L = [
+      // crossbar
+      ['alpha', 'beta', true],   // pulse
+      ['beta',  'gamma', true],  // pulse
+      // pivot
+      ['beta',  'pivot'],
+      // chains
+      ['alpha', 'L_top'],
+      ['L_top', 'L_mid'],
+      ['L_mid', 'LP_ne'],
+      ['gamma', 'R_top'],
+      ['R_top', 'R_mid'],
+      ['R_mid', 'RP_nw'],
+      // left pan (closed loop)
+      ['LP_nw', 'LP_w'],
+      ['LP_w',  'LP_sw'],
+      ['LP_sw', 'sigma'],
+      ['sigma', 'LP_se'],
+      ['LP_se', 'LP_e'],
+      ['LP_e',  'LP_ne'],
+      ['LP_ne', 'LP_nw'],
+      // right pan (closed loop)
+      ['RP_ne', 'RP_e'],
+      ['RP_e',  'RP_se'],
+      ['RP_se', 'tau'],
+      ['tau',   'RP_sw'],
+      ['RP_sw', 'RP_w'],
+      ['RP_w',  'RP_nw'],
+      ['RP_nw', 'RP_ne'],
     ];
 
-    // Ambient background stars — non-constellation, for visual density
-    const rand = rng('libra-ambient-v1');
+    // ── ambient dim background stars (a static field behind Libra) ──
     const ambient = [];
-    for (let i = 0; i < 14; i++) {
-      let ax, ay, ok = false, tries = 0;
-      while (!ok && tries < 10) {
-        ax = CX + (rand() - 0.5) * 130;
-        ay = CY + (rand() - 0.5) * 130;
-        const dx = ax - CX, dy = ay - CY;
-        if (Math.sqrt(dx*dx + dy*dy) < BRAIN_R - 8) ok = true;
-        tries++;
+    const rand = rng('libra-ambient-v3');
+    for (let i = 0; i < 24; i++) {
+      // Random 3D point inside the brain core sphere
+      let x, y, z;
+      while (true) {
+        x = (rand() - 0.5) * 150;
+        y = (rand() - 0.5) * 150;
+        z = (rand() - 0.5) * 60;
+        if (Math.sqrt(x*x + y*y) < 75) break;
       }
-      ambient.push({ x: ax, y: ay, r: 0.6 + rand() * 0.7 });
+      ambient.push({ x, y, z, r: 0.4 + rand() * 0.6 });
     }
+
+    // ── render initial SVG ──────────────────────────────────
+    const starById = {};
+    S.forEach(s => starById[s.id] = s);
 
     let html = '';
-    // Lines (drawn first, behind stars)
-    lines.forEach((ln, i) => {
-      const isPulse = i < 2;  // top two edges pulse, rest are static
-      const cls = 'libra-line' + (isPulse ? ' pulse p' + (i + 1) : '');
-      html += `<line class="${cls}" x1="${ln[0].x.toFixed(1)}" y1="${ln[0].y.toFixed(1)}" x2="${ln[1].x.toFixed(1)}" y2="${ln[1].y.toFixed(1)}"/>`;
+    // Ambient first (dim background)
+    ambient.forEach((a, i) => {
+      html += `<circle class="libra-ambient" data-amb="${i}" cx="0" cy="0" r="${a.r.toFixed(1)}"/>`;
     });
-    // Ambient dim stars
-    ambient.forEach(a => {
-      html += `<circle class="libra-star" cx="${a.x.toFixed(1)}" cy="${a.y.toFixed(1)}" r="${a.r.toFixed(1)}" opacity="0.55"/>`;
+    // Lines
+    L.forEach((ln, i) => {
+      const cls = 'libra-line' + (ln[2] ? ' pulse' + (i === 0 ? '' : ' p2') : '');
+      html += `<line class="${cls}" data-line="${i}" x1="0" y1="0" x2="0" y2="0"/>`;
     });
-    // Main Libra stars
-    stars.forEach(s => {
+    // Stars on top
+    S.forEach((s, i) => {
       const cls = 'libra-star' + (s.bright ? ' bright b' + s.b : '');
-      html += `<circle class="${cls}" cx="${s.p.x.toFixed(1)}" cy="${s.p.y.toFixed(1)}" r="${s.r}"/>`;
+      html += `<circle class="${cls}" data-star="${i}" cx="0" cy="0" r="${s.r}"/>`;
     });
-
     g.innerHTML = html;
+
+    // Cache element refs + line endpoints by id
+    S.forEach((s, i) => {
+      s.el = g.querySelector('[data-star="' + i + '"]');
+    });
+    ambient.forEach((a, i) => {
+      a.el = g.querySelector('[data-amb="' + i + '"]');
+    });
+    const lines = L.map((ln, i) => ({
+      s1: starById[ln[0]],
+      s2: starById[ln[1]],
+      el: g.querySelector('[data-line="' + i + '"]'),
+    }));
+
+    constellation = { stars: S, ambient, lines };
   }
 
-  // ── Shooting stars — spawn one every ~700–1500ms ─────────
+  function projectPoint(p, rotY, tiltX) {
+    // Rotate around Y (vertical) → swings constellation side-to-side
+    const cY = Math.cos(rotY), sY = Math.sin(rotY);
+    const x1 = p.x * cY + p.z * sY;
+    const z1 = -p.x * sY + p.z * cY;
+    const y1 = p.y;
+    // Tilt around X (slight pitch, see from a bit above)
+    const cX = Math.cos(tiltX), sX = Math.sin(tiltX);
+    const y2 = y1 * cX - z1 * sX;
+    const z2 = y1 * sX + z1 * cX;
+    // Perspective project
+    const scale = CONSTELLATION_FOCAL / (CONSTELLATION_FOCAL - z2);
+    return {
+      x: BRAIN_CX + x1 * scale,
+      y: BRAIN_CY + y2 * scale,
+      scale,
+      z: z2,
+    };
+  }
+
+  function animateConstellation() {
+    if (!constellation) return;
+    constellationRotY += 0.0042;            // ~ one full turn / 25s
+    const tilt = CONSTELLATION_TILT
+               + Math.sin(Date.now() / 4200) * 0.07;  // slight gentle wobble
+
+    constellation.stars.forEach(s => {
+      const p = projectPoint(s, constellationRotY, tilt);
+      if (!s.el) return;
+      s.el.setAttribute('cx', p.x.toFixed(1));
+      s.el.setAttribute('cy', p.y.toFixed(1));
+      const sizeMul = Math.max(0.55, Math.min(1.35, p.scale));
+      s.el.setAttribute('r', (s.r * sizeMul).toFixed(2));
+      // Closer (z > 0) is brighter; farther is dimmer
+      const op = Math.max(0.25, Math.min(1, 0.55 + p.z * 0.012));
+      s.el.style.opacity = op.toFixed(2);
+    });
+
+    constellation.ambient.forEach(a => {
+      const p = projectPoint(a, constellationRotY, tilt);
+      if (!a.el) return;
+      a.el.setAttribute('cx', p.x.toFixed(1));
+      a.el.setAttribute('cy', p.y.toFixed(1));
+      const op = Math.max(0.18, Math.min(0.6, 0.32 + p.z * 0.008));
+      a.el.style.opacity = op.toFixed(2);
+    });
+
+    constellation.lines.forEach(ln => {
+      if (!ln.s1 || !ln.s2 || !ln.el) return;
+      const p1 = projectPoint(ln.s1, constellationRotY, tilt);
+      const p2 = projectPoint(ln.s2, constellationRotY, tilt);
+      ln.el.setAttribute('x1', p1.x.toFixed(1));
+      ln.el.setAttribute('y1', p1.y.toFixed(1));
+      ln.el.setAttribute('x2', p2.x.toFixed(1));
+      ln.el.setAttribute('y2', p2.y.toFixed(1));
+      const avgZ = (p1.z + p2.z) / 2;
+      const op = Math.max(0.15, Math.min(0.7, 0.4 + avgZ * 0.006));
+      ln.el.style.opacity = op.toFixed(2);
+    });
+
+    requestAnimationFrame(animateConstellation);
+  }
+
+  // ── Shooting stars — confined to the blue brain core ──────
   let shootingStarsTimer = null;
   function spawnShootingStar() {
     const c = document.getElementById('shooting-stars');
@@ -480,34 +607,34 @@
     const star = document.createElement('div');
     star.className = 'shooting-star';
 
-    // Random starting point in the upper portion of the canvas
-    const startX = Math.random() * 75;        // 0% – 75%
-    const startY = Math.random() * 55;        // 0% – 55%
-    // Diagonal travel angle (always downward, 20–55° below horizontal)
-    const angle = 18 + Math.random() * 38;
-    const dist  = 320 + Math.random() * 240;  // 320–560 px
-    const dx = Math.cos(angle * Math.PI / 180) * dist;
-    const dy = Math.sin(angle * Math.PI / 180) * dist;
+    // Random start anywhere in the container (it's already clipped to a circle)
+    const startX = Math.random() * 95;
+    const startY = Math.random() * 95;
+    // Random direction — full 360°
+    const angle = Math.random() * 360;
+    const dist  = 90 + Math.random() * 80;  // 90–170 px (container ~220px)
+    const rad = angle * Math.PI / 180;
+    const dx = Math.cos(rad) * dist;
+    const dy = Math.sin(rad) * dist;
 
     star.style.left = startX + '%';
     star.style.top  = startY + '%';
     star.style.setProperty('--rot', angle + 'deg');
     star.style.setProperty('--dx', dx.toFixed(0) + 'px');
     star.style.setProperty('--dy', dy.toFixed(0) + 'px');
-    star.style.animationDuration = (0.85 + Math.random() * 0.55).toFixed(2) + 's';
-    // Slight length variance
-    star.style.width = (80 + Math.random() * 70).toFixed(0) + 'px';
+    star.style.animationDuration = (0.7 + Math.random() * 0.45).toFixed(2) + 's';
+    star.style.width = (40 + Math.random() * 35).toFixed(0) + 'px';
 
     c.appendChild(star);
-    setTimeout(() => star.remove(), 1600);
+    setTimeout(() => star.remove(), 1400);
   }
 
   function startShootingStars() {
     function loop() {
       spawnShootingStar();
-      // Occasionally double-up for a richer feel
-      if (Math.random() < 0.18) setTimeout(spawnShootingStar, 220);
-      shootingStarsTimer = setTimeout(loop, 700 + Math.random() * 900);
+      // Roughly half the time, spawn a second one shortly after
+      if (Math.random() < 0.45) setTimeout(spawnShootingStar, 120 + Math.random() * 180);
+      shootingStarsTimer = setTimeout(loop, 500 + Math.random() * 700);
     }
     loop();
   }
@@ -622,6 +749,47 @@
     document.querySelectorAll('.chip-capsule').forEach(el => {
       el.classList.toggle('is-open', el.dataset.cid === cid);
     });
+
+    // Position the now-visible capsule with viewport clamping.
+    const chip    = document.querySelector('.company-chip[data-cid="' + cid + '"]');
+    const capsule = document.querySelector('.chip-capsule[data-cid="' + cid + '"]');
+    if (!chip || !capsule) return;
+
+    const cr = chip.getBoundingClientRect();
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+
+    // Measure capsule (needs to be visible already — is-open was set above)
+    const CW = capsule.offsetWidth || 280;
+    const CH = capsule.offsetHeight || 320;
+
+    const GAP        = 14;   // distance from chip
+    const PAD        = 12;   // min distance from viewport edge
+    const TOP_BUFFER = 76;   // keep below the top nav
+
+    // Choose the side with more room
+    const roomRight = vw - cr.right - GAP - PAD;
+    const roomLeft  = cr.left - GAP - PAD;
+
+    let left, origin;
+    if (roomRight >= CW || roomRight >= roomLeft) {
+      left = cr.right + GAP;
+      origin = 'left center';
+    } else {
+      left = cr.left - GAP - CW;
+      origin = 'right center';
+    }
+    if (left + CW > vw - PAD) left = vw - PAD - CW;
+    if (left < PAD)            left = PAD;
+
+    // Vertical: centered on chip, but never above the nav or past the bottom
+    let top = cr.top + cr.height / 2 - CH / 2;
+    if (top < TOP_BUFFER)         top = TOP_BUFFER;
+    if (top + CH > vh - PAD)      top = vh - PAD - CH;
+
+    capsule.style.left = left + 'px';
+    capsule.style.top  = top  + 'px';
+    capsule.style.setProperty('--co', origin);
   }
 
   function scheduleCloseCapsule(cid) {
@@ -642,7 +810,8 @@
   function init() {
     setGreeting();
     pingAll();
-    renderLibra();
+    setupConstellation3D();
+    animateConstellation();
     placeChipsAndConnectors();
     startShootingStars();
   }

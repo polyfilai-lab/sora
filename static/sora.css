@@ -283,8 +283,11 @@ input, select, textarea { font-family: inherit; color: inherit; }
 }
 
 /* Libra constellation — replaces the random neural mesh */
+.libra-ambient {
+  fill: rgba(255, 255, 255, 0.45);
+}
 .libra-star {
-  fill: rgba(255, 255, 255, 0.5);
+  fill: rgba(255, 255, 255, 0.55);
 }
 .libra-star.bright {
   fill: white;
@@ -319,31 +322,33 @@ input, select, textarea { font-family: inherit; color: inherit; }
   to { stroke-dashoffset: -126; }
 }
 
-/* ── Shooting stars — streak across the brain canvas ──────── */
+/* ── Shooting stars — confined to the blue brain core ─────── */
 .shooting-stars {
   position: absolute;
-  inset: 0;
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  width: 24%;            /* matches the blue brain core area */
+  aspect-ratio: 1;
+  border-radius: 50%;
   pointer-events: none;
-  overflow: hidden;
-  z-index: 2;
-  border-radius: 999px;  /* clip to roughly the brain area */
+  overflow: hidden;      /* clips meteors to the circle */
+  z-index: 3;
 }
 .shooting-star {
   position: absolute;
-  width: 110px; height: 2px;
+  width: 60px; height: 1.5px;
   background: linear-gradient(90deg,
     transparent 0%,
     rgba(255, 255, 255, 0)  10%,
-    rgba(255, 255, 255, 0.85) 70%,
+    rgba(255, 255, 255, 0.9) 70%,
     white 100%);
   border-radius: 99px;
   transform-origin: right center;
   filter:
-    drop-shadow(0 0 5px rgba(255,255,255,0.95))
-    drop-shadow(0 0 14px rgba(125, 211, 252, 0.6))
-    drop-shadow(0 0 24px rgba(167, 139, 250, 0.4));
+    drop-shadow(0 0 4px rgba(255,255,255,0.95))
+    drop-shadow(0 0 10px rgba(125, 211, 252, 0.7));
   opacity: 0;
-  animation: shoot 1.05s ease-out forwards;
+  animation: shoot 0.95s ease-out forwards;
 }
 @keyframes shoot {
   0%   { opacity: 0; transform: translate(0, 0) rotate(var(--rot, 30deg)); }
@@ -421,10 +426,12 @@ input, select, textarea { font-family: inherit; color: inherit; }
 }
 
 /* ── Chip capsule (project popup) ─────────────────────────── */
+/* `position: fixed` + JS-computed left/top so it always stays in the
+   viewport — never behind the nav or off the page edge. */
 .chip-capsule {
-  position: absolute;
+  position: fixed;
   width: 280px;
-  background: rgba(255, 255, 255, 0.94);
+  background: rgba(255, 255, 255, 0.96);
   border: 1px solid rgba(255, 255, 255, 0.95);
   border-radius: 18px;
   padding: 14px 16px;
@@ -433,27 +440,16 @@ input, select, textarea { font-family: inherit; color: inherit; }
   -webkit-backdrop-filter: blur(18px) saturate(160%);
   opacity: 0;
   pointer-events: none;
-  z-index: 20;
-  transition: opacity 0.22s ease,
-              transform 0.32s cubic-bezier(0.16, 1, 0.3, 1);
-}
-.chip-capsule.on-right {
-  transform-origin: left center;
-  transform: translateY(-50%) translateX(72px) scale(0.94);
-}
-.chip-capsule.on-right.is-open {
-  transform: translateY(-50%) translateX(72px) scale(1);
-}
-.chip-capsule.on-left {
-  transform-origin: right center;
-  transform: translateY(-50%) translateX(-100%) translateX(-72px) scale(0.94);
-}
-.chip-capsule.on-left.is-open {
-  transform: translateY(-50%) translateX(-100%) translateX(-72px) scale(1);
+  z-index: 200;          /* above topbar */
+  transform: scale(0.94);
+  transform-origin: var(--co, left center);
+  transition: opacity 0.2s ease,
+              transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .chip-capsule.is-open {
   opacity: 1;
   pointer-events: auto;
+  transform: scale(1);
 }
 .chip-capsule-head {
   display: flex; align-items: center; gap: 10px;
