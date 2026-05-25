@@ -1,205 +1,221 @@
 {% extends "_base.html" %}
 {% set active = 'dashboard' %}
-{% block title %}Sora · Mission Control{% endblock %}
+{% block title %}Sora{% endblock %}
 
 {% block content %}
-<!-- ── HERO / MISSION SUMMARY ────────────────────────────── -->
-<section class="sora-hero">
-  <div>
-    <h1 class="sora-hero-headline">
-      Portfolio under <em>active observation</em>.
-    </h1>
-    <p class="sora-hero-sub">
-      // Mission control for every company, every product, every signal you're tracking.
-      Channels are live, telemetry is flowing, the deck is yours.
-    </p>
-    <div class="sora-hero-meta">
-      <span class="sora-hero-dot"></span>
-      <span>SYS NOMINAL · {{ stats.live }} LIVE · {{ stats.building }} IN FLIGHT · {{ stats.ideas }} INCOMING</span>
-    </div>
-  </div>
-
-  <div class="sora-stats">
-    <div class="sora-stat">
-      <div class="sora-stat-label">Channels</div>
-      <div class="sora-stat-num">{{ '%02d'|format(stats.companies) }}</div>
-    </div>
-    <div class="sora-stat">
-      <div class="sora-stat-label">Total proj</div>
-      <div class="sora-stat-num">{{ '%02d'|format(stats.projects) }}</div>
-    </div>
-    <div class="sora-stat">
-      <div class="sora-stat-label">In flight</div>
-      <div class="sora-stat-num accent">{{ '%02d'|format(stats.building) }}</div>
-    </div>
-    <div class="sora-stat">
-      <div class="sora-stat-label">Tokens burned</div>
-      <div class="sora-stat-num">{{ '{:,}'.format(stats.tokens) }}</div>
-    </div>
-  </div>
+<!-- ── GREETING ──────────────────────────────────────────── -->
+<section class="sora-greeting">
+  <h1 id="greeting-line">Hello, Jordan.</h1>
+  <p class="sub">
+    <span class="live-dot"></span>
+    {{ stats.live }} live · {{ stats.building }} in flight · {{ stats.ideas }} ideas to triage
+    {% if stats.tokens %} · {{ '{:,}'.format(stats.tokens) }} tokens spent{% endif %}
+  </p>
 </section>
 
-<!-- ── COMMAND BAR ───────────────────────────────────────── -->
-<div class="sora-quickbar">
-  <input id="quick-idea" class="sora-input" type="text"
-         placeholder="// Capture a signal — press enter to log it"
-         onkeydown="if(event.key==='Enter') Sora.quickIdea()">
-  <button class="btn btn-sm" onclick="Sora.quickIdea()">Catch</button>
-  <button class="btn btn-sm btn-primary" onclick="Sora.openNewProject()">+ Project</button>
-  <button class="btn btn-sm" onclick="Sora.openNewCompany()">+ Channel</button>
-  <button class="btn btn-sm btn-accent" onclick="Sora.syncRailway()" title="Pull live URLs from Railway">⟲ Sync</button>
-</div>
+<div class="hub">
+  <!-- ── MAIN: Companies ─────────────────────────────────── -->
+  <div class="hub-main">
+    <div class="section">
+      <h2>Portfolio</h2>
+      <span class="hint">{{ stats.companies }} companies · {{ stats.projects }} projects</span>
+    </div>
 
-<div id="sync-panel" style="display:none; margin: 6px 0 14px; padding: 14px 18px; border-radius: 8px;
-                             background: var(--bg-panel); border: 1px solid var(--edge);"></div>
+    {% for company in companies %}
+      {% set projects = by_company.get(company.id, []) %}
+      {% set live     = projects | selectattr('status', 'equalto', 'live')     | list | length %}
+      {% set building = projects | selectattr('status', 'equalto', 'building') | list | length %}
+      {% set tokens   = projects | sum(attribute='tokens_used') %}
+      {% set total    = projects|length %}
+      {% set TOP      = 3 %}
 
-<!-- ── MISSION CONTROL GRID ──────────────────────────────── -->
-<div class="sora-section">
-  <span class="sora-section-mark">CH · 01-{{ '%02d'|format(stats.companies) }}</span>
-  <h2>Active channels</h2>
-  <div class="sora-section-rule"></div>
-  <div class="sora-section-hint">{{ stats.projects }} READOUTS</div>
-</div>
-
-<div class="mc-grid">
-  {% for company in companies %}
-    {% set projects = by_company.get(company.id, []) %}
-    {% set live     = projects | selectattr('status', 'equalto', 'live')     | list | length %}
-    {% set building = projects | selectattr('status', 'equalto', 'building') | list | length %}
-    {% set idea     = projects | selectattr('status', 'equalto', 'idea')     | list | length %}
-    {% set paused   = projects | selectattr('status', 'equalto', 'paused')   | list | length %}
-    {% set shipped  = projects | selectattr('status', 'equalto', 'shipped')  | list | length %}
-    {% set total    = projects | length %}
-    {% set tokens   = projects | sum(attribute='tokens_used') %}
-
-    <article class="mc-channel" style="--c: {{ company.color }};">
-      <header class="mc-head">
-        <div>
-          <div class="mc-channel-id">CH {{ '%02d'|format(loop.index) }} · {{ company.name|truncate(20, true, '…') }}</div>
-          <div class="mc-channel-name">{{ company.name }}</div>
-          {% if company.tagline %}<div class="mc-channel-tag">// {{ company.tagline }}</div>{% endif %}
-        </div>
-        <div class="mc-channel-readout">
-          <div class="big">{{ '%02d'|format(total) }}</div>
-          <div class="small">{{ '{:,}'.format(tokens or 0) }} TOK</div>
-        </div>
-      </header>
-
-      <!-- Telemetry: sparkline + segmented status bar -->
-      <div class="mc-telemetry">
-        <div class="mc-spark">
-          <div class="mc-spark-label">Activity · 14d</div>
-          <svg viewBox="0 0 120 28" preserveAspectRatio="none" class="mc-spark-svg"
-               data-seed="{{ company.id }}" data-color="{{ company.color }}"></svg>
-        </div>
-        <div class="mc-bar">
-          <div class="mc-bar-label">Status mix</div>
-          <div class="mc-bar-track">
-            {% if live     %}<div class="mc-bar-seg s-live"     style="flex: {{ live     }};"></div>{% endif %}
-            {% if building %}<div class="mc-bar-seg s-building" style="flex: {{ building }};"></div>{% endif %}
-            {% if idea     %}<div class="mc-bar-seg s-idea"     style="flex: {{ idea     }};"></div>{% endif %}
-            {% if paused   %}<div class="mc-bar-seg s-paused"   style="flex: {{ paused   }};"></div>{% endif %}
-            {% if shipped  %}<div class="mc-bar-seg s-shipped"  style="flex: {{ shipped  }};"></div>{% endif %}
-            {% if total == 0 %}<div style="flex: 1; opacity: 0.18; background: var(--ink-low);"></div>{% endif %}
+      <article class="company" data-cid="{{ company.id }}">
+        <header class="company-head">
+          <div class="company-band" style="background: {{ company.color }};"></div>
+          <div class="company-name-block">
+            <h3 class="name">{{ company.name }}</h3>
+            {% if company.tagline %}<div class="tag">{{ company.tagline }}</div>{% endif %}
           </div>
-          <div class="mc-bar-key">
-            {% if live     %}<span class="k-live">{{ live }} live</span>{% endif %}
-            {% if building %}<span class="k-building">{{ building }} build</span>{% endif %}
-            {% if idea     %}<span class="k-idea">{{ idea }} idea</span>{% endif %}
-            {% if paused   %}<span class="k-paused">{{ paused }}</span>{% endif %}
-            {% if shipped  %}<span class="k-shipped">{{ shipped }}</span>{% endif %}
+          <div class="company-metrics">
+            <div class="company-metric">
+              <span class="num">{{ total }}</span>
+              <span class="label">Projects</span>
+            </div>
+            {% if live %}
+              <div class="company-metric">
+                <span class="num is-accent">{{ live }}</span>
+                <span class="label">Live</span>
+              </div>
+            {% endif %}
+            {% if tokens %}
+              <div class="company-metric">
+                <span class="num">{{ '{:,}'.format(tokens) }}</span>
+                <span class="label">Tokens</span>
+              </div>
+            {% endif %}
           </div>
-        </div>
-      </div>
+        </header>
 
-      <!-- Project readouts -->
-      <div class="mc-projects">
-        {% for p in projects %}
-          <a class="mc-project" href="/project/{{ p.id }}">
-            <span class="mc-project-status-dot s-{{ p.status }}"></span>
-            <span>
-              <span class="mc-project-name">{{ p.name }}</span>
-              {% if p.tagline %}<span class="mc-project-tag">{{ p.tagline }}</span>{% endif %}
-            </span>
-            <span class="mc-project-latency">
-              {% if p.url %}<span class="sora-ping-dot" data-ping="{{ p.url }}"></span>—{% else %}NO URL{% endif %}
-            </span>
-            <span class="mc-project-status s-{{ p.status }}">{{ p.status }}</span>
-          </a>
-        {% else %}
-          <div class="mc-empty">// NO READOUTS</div>
-        {% endfor %}
-      </div>
+        {% if projects %}
+          <div class="company-projects">
+            {% for p in projects %}
+              <a class="project-row {% if loop.index > TOP %}is-hidden is-extra{% endif %}"
+                 href="{% if p.url %}/frame?p={{ p.id }}{% else %}/project/{{ p.id }}{% endif %}"
+                 title="{{ p.name }}{% if p.url %} — opens in Frame view{% endif %}">
+                <span class="dot s-{{ p.status }}"></span>
+                <span class="name">
+                  {{ p.name }}
+                  {% if p.tagline %}<span class="sub">{{ p.tagline }}</span>{% endif %}
+                </span>
+                <span class="status-text s-{{ p.status }}">{{ p.status }}</span>
+                <a class="info-btn" href="/project/{{ p.id }}"
+                   onclick="event.stopPropagation()"
+                   title="Notes, changelog, settings">ⓘ</a>
+              </a>
+            {% endfor %}
+          </div>
+        {% endif %}
 
-      <footer class="mc-foot">
-        <button class="btn btn-sm" onclick="Sora.openNewProject('{{ company.id }}')">+ Project</button>
-        <button class="btn btn-sm btn-ghost" onclick="Sora.editCompany('{{ company.id }}')">Edit</button>
-      </footer>
-    </article>
-  {% endfor %}
-
-  {# Unassigned #}
-  {% set orphans = by_company.get(none, []) %}
-  {% if orphans %}
-    <article class="mc-channel" style="--c: #94a3b8;">
-      <header class="mc-head">
-        <div>
-          <div class="mc-channel-id">CH — · UNASSIGNED</div>
-          <div class="mc-channel-name">Loose ends</div>
-          <div class="mc-channel-tag">// Projects not yet attached to a channel</div>
-        </div>
-        <div class="mc-channel-readout">
-          <div class="big">{{ '%02d'|format(orphans|length) }}</div>
-          <div class="small">orphans</div>
-        </div>
-      </header>
-      <div class="mc-projects" style="padding-top: 12px;">
-        {% for p in orphans %}
-          <a class="mc-project" href="/project/{{ p.id }}">
-            <span class="mc-project-status-dot s-{{ p.status }}"></span>
-            <span><span class="mc-project-name">{{ p.name }}</span></span>
-            <span class="mc-project-latency">—</span>
-            <span class="mc-project-status s-{{ p.status }}">{{ p.status }}</span>
-          </a>
-        {% endfor %}
-      </div>
-    </article>
-  {% endif %}
-</div>
-
-<!-- ── DRIFT // INCOMING SIGNALS ─────────────────────────── -->
-<div class="sora-section">
-  <span class="sora-section-mark">SIG · DRIFT</span>
-  <h2>Incoming signals</h2>
-  <div class="sora-section-rule"></div>
-  <div class="sora-section-hint">{{ ideas|length }} captured</div>
-</div>
-
-<div class="sora-ideas">
-  {% if ideas %}
-    {% for i in ideas %}
-      <div class="sora-idea-row" data-idea-id="{{ i.id }}">
-        <div class="sora-idea-text">{{ i.text }}</div>
-        <div class="sora-idea-meta">{{ i.created_at[:10] }}</div>
-        <button class="btn btn-sm" onclick="Sora.promoteIdea('{{ i.id }}')">Promote</button>
-        <button class="btn btn-sm btn-danger" onclick="Sora.deleteIdea('{{ i.id }}')">×</button>
-      </div>
+        <footer class="company-foot">
+          {% if total > TOP %}
+            <button class="more" onclick="Sora.toggleCompany('{{ company.id }}', this)">
+              Show all {{ total }} →
+            </button>
+          {% else %}
+            <span></span>
+          {% endif %}
+          <div class="actions">
+            <button class="btn btn-sm btn-ghost" onclick="Sora.openNewProject('{{ company.id }}')">+ Project</button>
+            <button class="btn btn-sm btn-ghost" onclick="Sora.editCompany('{{ company.id }}')">Edit</button>
+          </div>
+        </footer>
+      </article>
     {% endfor %}
-  {% else %}
-    <div class="sora-empty">// NO SIGNALS — use the command bar to log one</div>
-  {% endif %}
+
+    {# Unassigned #}
+    {% set orphans = by_company.get(none, []) %}
+    {% if orphans %}
+      <article class="company">
+        <header class="company-head">
+          <div class="company-band" style="background: #94a3b8;"></div>
+          <div class="company-name-block">
+            <h3 class="name">Unassigned</h3>
+            <div class="tag">Projects not yet attached to a company</div>
+          </div>
+          <div class="company-metrics">
+            <div class="company-metric">
+              <span class="num">{{ orphans|length }}</span>
+              <span class="label">Items</span>
+            </div>
+          </div>
+        </header>
+        <div class="company-projects">
+          {% for p in orphans %}
+            <a class="project-row" href="{% if p.url %}/frame?p={{ p.id }}{% else %}/project/{{ p.id }}{% endif %}">
+              <span class="dot s-{{ p.status }}"></span>
+              <span class="name">{{ p.name }}</span>
+              <span class="status-text s-{{ p.status }}">{{ p.status }}</span>
+              <a class="info-btn" href="/project/{{ p.id }}" onclick="event.stopPropagation()">ⓘ</a>
+            </a>
+          {% endfor %}
+        </div>
+      </article>
+    {% endif %}
+  </div>
+
+  <!-- ── SIDE: Console ───────────────────────────────────── -->
+  <aside class="hub-side">
+    <div class="console-block">
+      <h3>In flight</h3>
+      {% set in_flight = [] %}
+      {% for p in projects_flat if p.status == 'building' %}
+        {% set _ = in_flight.append(p) %}
+      {% endfor %}
+      {% if in_flight %}
+        <ul class="console-list">
+          {% for p in in_flight[:5] %}
+            <li>
+              <a class="console-item" href="{% if p.url %}/frame?p={{ p.id }}{% else %}/project/{{ p.id }}{% endif %}">
+                <span class="dot" style="background: var(--s-building); box-shadow: 0 0 6px rgba(6,182,212,0.5);"></span>
+                <span class="name">
+                  {{ p.name }}
+                  {% if p.company_name %}<span class="sub">{{ p.company_name }}</span>{% endif %}
+                </span>
+              </a>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <div class="console-empty">Nothing in flight right now.</div>
+      {% endif %}
+    </div>
+
+    <div class="console-block">
+      <h3>Ideas</h3>
+      <div class="console-capture">
+        <input id="quick-idea" type="text"
+               placeholder="Catch a thought…"
+               onkeydown="if(event.key==='Enter') Sora.quickIdea()">
+        <button class="btn btn-primary btn-sm" onclick="Sora.quickIdea()">Save</button>
+      </div>
+      {% if ideas %}
+        <div>
+          {% for i in ideas[:5] %}
+            <div class="console-idea" data-idea-id="{{ i.id }}">
+              <span class="txt">{{ i.text }}</span>
+              <span class="actions">
+                <button class="icon-btn" onclick="Sora.promoteIdea('{{ i.id }}')" title="Turn into project">↗</button>
+                <button class="icon-btn danger" onclick="Sora.deleteIdea('{{ i.id }}')" title="Dismiss">×</button>
+              </span>
+            </div>
+          {% endfor %}
+        </div>
+        {% if ideas|length > 5 %}
+          <div class="console-more">+ {{ ideas|length - 5 }} more</div>
+        {% endif %}
+      {% else %}
+        <div class="console-empty">Nothing here yet.</div>
+      {% endif %}
+    </div>
+
+    <div class="console-block">
+      <h3>Live tools</h3>
+      {% set live_count = 0 %}
+      {% for p in projects_flat if p.status == 'live' and p.url %}
+        {% set live_count = live_count + 1 %}
+      {% endfor %}
+      <ul class="console-list">
+        {% for p in projects_flat if p.status == 'live' and p.url %}
+          {% if loop.index <= 5 %}
+            <li>
+              <a class="console-item" href="/frame?p={{ p.id }}">
+                <span class="dot" style="background: var(--s-live); box-shadow: 0 0 6px rgba(16,185,129,0.5);"></span>
+                <span class="name">
+                  {{ p.name }}
+                  <span class="sub">{{ p.url | replace('https://','') | replace('http://','') }}</span>
+                </span>
+              </a>
+            </li>
+          {% endif %}
+        {% endfor %}
+      </ul>
+      {% if live_count > 5 %}
+        <a class="console-more" href="/frame">Open all in Frame →</a>
+      {% endif %}
+    </div>
+  </aside>
 </div>
 
 <!-- ── MODALS ────────────────────────────────────────────── -->
 <div class="sora-modal-bg" id="modal-project">
   <div class="sora-modal">
-    <h3>// New project</h3>
+    <h3>New project</h3>
     <div class="sora-form">
       <div><label class="sora-label">Name</label><input class="sora-input" id="np-name" type="text" placeholder="e.g. Hillbrook Concierge v2"></div>
       <div><label class="sora-label">Tagline</label><input class="sora-input" id="np-tagline" type="text" placeholder="One line — what is this?"></div>
       <div class="sora-row-inline">
         <div style="flex:1;">
-          <label class="sora-label">Channel</label>
+          <label class="sora-label">Company</label>
           <select class="sora-select" id="np-company">
             <option value="">— unassigned —</option>
             {% for c in companies %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}
@@ -228,11 +244,11 @@
 
 <div class="sora-modal-bg" id="modal-company">
   <div class="sora-modal">
-    <h3>// New channel</h3>
+    <h3>New company</h3>
     <div class="sora-form">
       <div><label class="sora-label">Name</label><input class="sora-input" id="nc-name" type="text"></div>
       <div><label class="sora-label">Tagline</label><input class="sora-input" id="nc-tagline" type="text"></div>
-      <div><label class="sora-label">Accent color</label><input class="sora-input" id="nc-color" type="color" value="#06b6d4" style="height:46px; padding:6px;"></div>
+      <div><label class="sora-label">Accent color</label><input class="sora-input" id="nc-color" type="color" value="#0284c7" style="height:42px; padding:5px;"></div>
       <div><label class="sora-label">Notes</label><textarea class="sora-textarea" id="nc-notes"></textarea></div>
     </div>
     <div class="sora-modal-actions">
@@ -241,52 +257,53 @@
     </div>
   </div>
 </div>
+
+<!-- ── COMMAND PALETTE ─────────────────────────────────── -->
+<div class="palette-bg" id="palette">
+  <div class="palette">
+    <div class="palette-input-row">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+      <input id="palette-input" class="palette-input" placeholder="Jump to a project, company, or tool…" autocomplete="off">
+    </div>
+    <div class="palette-results" id="palette-results"></div>
+    <div class="palette-foot">
+      <span><kbd>↑</kbd><kbd>↓</kbd> navigate · <kbd>↵</kbd> open · <kbd>esc</kbd> close</span>
+      <span>Sora</span>
+    </div>
+  </div>
+</div>
+
+<!-- Search index (consumed by command palette) -->
+<script id="search-index" type="application/json">
+{
+  "companies": [
+    {% for c in companies %}
+    {"id": "{{ c.id }}", "name": {{ c.name|tojson }}, "tagline": {{ (c.tagline or '')|tojson }}, "kind": "company", "url": "#{{ c.id }}"}
+    {{ "," if not loop.last }}
+    {% endfor %}
+  ],
+  "projects": [
+    {% for p in projects_flat %}
+    {
+      "id":      "{{ p.id }}",
+      "name":    {{ p.name|tojson }},
+      "tagline": {{ (p.tagline or '')|tojson }},
+      "status":  "{{ p.status }}",
+      "company": {{ (p.company_name or '')|tojson }},
+      "url":     {{ (p.url or '')|tojson }},
+      "href":    "{% if p.url %}/frame?p={{ p.id }}{% else %}/project/{{ p.id }}{% endif %}",
+      "info":    "/project/{{ p.id }}"
+    }{{ "," if not loop.last }}
+    {% endfor %}
+  ]
+}
+</script>
+
+<div id="sync-panel" style="display:none; margin-top: 16px;"></div>
+
+<!-- Hidden: trigger command palette via sora-cmd buttons in the topbar -->
 {% endblock %}
 
 {% block scripts %}
 <script src="{{ url_for('static', filename='sora.js') }}"></script>
-<script>
-// Decorative sparklines for each channel — seeded random walk so they're
-// stable per-company but vary between channels. (Real time-series data
-// can plug in later from the changelog log timestamps.)
-(function () {
-  function seedRand(seedStr) {
-    let h = 2166136261;
-    for (let i = 0; i < seedStr.length; i++) {
-      h ^= seedStr.charCodeAt(i);
-      h = Math.imul(h, 16777619);
-    }
-    return function () {
-      h = Math.imul(h ^ (h >>> 16), 2246822507);
-      h = Math.imul(h ^ (h >>> 13), 3266489909);
-      return ((h ^= (h >>> 16)) >>> 0) / 4294967295;
-    };
-  }
-  document.querySelectorAll('.mc-spark-svg').forEach(svg => {
-    const seed = svg.dataset.seed || 'x';
-    const color = svg.dataset.color || '#06b6d4';
-    const rand = seedRand(seed);
-    const N = 14, W = 120, H = 28;
-    const pts = [];
-    let y = 14 + (rand() - 0.5) * 12;
-    for (let i = 0; i < N; i++) {
-      y += (rand() - 0.5) * 6;
-      y = Math.max(4, Math.min(H - 4, y));
-      pts.push({ x: (i / (N - 1)) * W, y });
-    }
-    const d = pts.map((p, i) => (i === 0 ? `M${p.x.toFixed(1)},${p.y.toFixed(1)}` : `L${p.x.toFixed(1)},${p.y.toFixed(1)}`)).join(' ');
-    const fill = `${d} L${W},${H} L0,${H} Z`;
-    svg.innerHTML = `
-      <defs>
-        <linearGradient id="sg-${seed}" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="${color}" stop-opacity="0.35"/>
-          <stop offset="100%" stop-color="${color}" stop-opacity="0"/>
-        </linearGradient>
-      </defs>
-      <path d="${fill}" fill="url(#sg-${seed})" stroke="none"/>
-      <path d="${d}" fill="none" stroke="${color}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-    `;
-  });
-})();
-</script>
 {% endblock %}

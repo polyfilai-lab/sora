@@ -75,10 +75,21 @@ def dashboard():
         "tokens":    sum(int(p.get("tokens_used", 0) or 0) for p in projects),
     }
 
+    # Flat project list, each annotated with its company name for the right-side
+    # console + command palette. Sorted by updated_at desc so "In flight" reads
+    # recent-first.
+    company_by_id = {c["id"]: c for c in companies}
+    projects_flat: list[dict] = []
+    for p in projects:
+        c = company_by_id.get(p.get("company_id") or "")
+        projects_flat.append({**p, "company_name": c["name"] if c else ""})
+    projects_flat.sort(key=lambda p: p.get("updated_at") or "", reverse=True)
+
     return render_template(
         "dashboard.html",
         companies=companies,
         by_company=by_company,
+        projects_flat=projects_flat,
         ideas=ideas,
         stats=stats,
     )
