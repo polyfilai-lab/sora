@@ -307,6 +307,36 @@ def _bootstrap_if_empty():
 _bootstrap_if_empty()
 
 
+# Idempotent migrations — safe to run on every boot. They only act if the
+# old state is detected.
+def _run_idempotent_migrations():
+    try:
+        data = store.load()
+        portfolio = next(
+            (c for c in data["companies"] if c["name"].strip().lower() in
+             {"jordan (portfolio)", "jordan portfolio"}),
+            None,
+        )
+        if portfolio:
+            pcid = portfolio["id"]
+            kept: list[dict] = []
+            for p in data["projects"]:
+                if p["name"] == "Sora" and p.get("company_id") == pcid:
+                    continue  # delete the meta-Sora project
+                if p.get("company_id") == pcid:
+                    p["company_id"] = None  # unassign others
+                kept.append(p)
+            data["projects"] = kept
+            data["companies"] = [c for c in data["companies"] if c["id"] != pcid]
+            store.save(data)
+            print("[sora] migration: removed Jordan (Portfolio) + Sora project", flush=True)
+    except Exception as e:
+        print(f"[sora] migration skipped: {type(e).__name__}: {e}", flush=True)
+
+
+_run_idempotent_migrations()
+
+
 # Manual re-bootstrap endpoint (idempotent — only seeds if empty)
 @app.post("/api/bootstrap")
 def api_bootstrap():

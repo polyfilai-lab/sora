@@ -212,22 +212,52 @@ input, select, textarea { font-family: inherit; color: inherit; }
   overflow: visible;
 }
 
-/* Sonar rings — three rings expanding outward */
+/* Sonar rings — three rings expanding outward, each cycling through a spectrum */
 .brain-ring {
   fill: none;
-  stroke: var(--sky-400);
-  stroke-width: 1.2;
+  stroke-width: 1.4;
   transform-origin: center;
   transform-box: fill-box;
-  animation: sonar 4.5s ease-out infinite;
   opacity: 0;
+  filter: drop-shadow(0 0 6px currentColor);
 }
-.brain-ring.r2 { animation-delay: 1.5s; stroke-width: 1; }
-.brain-ring.r3 { animation-delay: 3s;   stroke-width: 0.8; }
+.brain-ring.r1 {
+  animation: sonar 4.5s ease-out infinite, hue-1 14s linear infinite;
+}
+.brain-ring.r2 {
+  animation: sonar 4.5s ease-out infinite 1.5s, hue-2 14s linear infinite;
+  stroke-width: 1.1;
+}
+.brain-ring.r3 {
+  animation: sonar 4.5s ease-out infinite 3s, hue-3 14s linear infinite;
+  stroke-width: 0.9;
+}
 @keyframes sonar {
-  0%   { transform: scale(0.6); opacity: 0; }
-  20%  { opacity: 0.6; }
-  100% { transform: scale(2.3); opacity: 0; }
+  0%   { transform: scale(0.55); opacity: 0; }
+  18%  { opacity: 0.75; }
+  100% { transform: scale(2.4);  opacity: 0; }
+}
+/* Spectrum cycles, phase-offset per ring for a continuous chase */
+@keyframes hue-1 {
+  0%, 100% { stroke: #38bdf8; }   /* cyan */
+  20%      { stroke: #a78bfa; }   /* violet */
+  40%      { stroke: #f472b6; }   /* pink */
+  60%      { stroke: #fbbf24; }   /* gold */
+  80%      { stroke: #34d399; }   /* mint */
+}
+@keyframes hue-2 {
+  0%, 100% { stroke: #f472b6; }
+  20%      { stroke: #fbbf24; }
+  40%      { stroke: #34d399; }
+  60%      { stroke: #38bdf8; }
+  80%      { stroke: #a78bfa; }
+}
+@keyframes hue-3 {
+  0%, 100% { stroke: #34d399; }
+  20%      { stroke: #38bdf8; }
+  40%      { stroke: #a78bfa; }
+  60%      { stroke: #f472b6; }
+  80%      { stroke: #fbbf24; }
 }
 
 /* Brain core: breathing + soft glow */
@@ -252,39 +282,74 @@ input, select, textarea { font-family: inherit; color: inherit; }
   fill: url(#brain-grad);
 }
 
-/* Neural mesh — dots + lines inside the core */
-.neural-dot {
-  fill: rgba(255, 255, 255, 0.55);
+/* Libra constellation — replaces the random neural mesh */
+.libra-star {
+  fill: rgba(255, 255, 255, 0.5);
 }
-.neural-dot.active {
+.libra-star.bright {
   fill: white;
-  animation: flicker 1.8s ease-in-out infinite;
+  filter: drop-shadow(0 0 4px rgba(255,255,255,0.95));
+  animation: twinkle 2.6s ease-in-out infinite;
 }
-.neural-dot.active.d2 { animation-delay: 0.4s; }
-.neural-dot.active.d3 { animation-delay: 0.8s; }
-.neural-dot.active.d4 { animation-delay: 1.2s; }
-.neural-dot.active.d5 { animation-delay: 1.6s; }
-@keyframes flicker {
-  0%, 100% { opacity: 1;   r: 1.8; }
-  50%      { opacity: 0.4; r: 1.2; }
+.libra-star.b1 { animation-delay: 0s; }
+.libra-star.b2 { animation-delay: 0.6s; }
+.libra-star.b3 { animation-delay: 1.2s; }
+.libra-star.b4 { animation-delay: 1.8s; }
+@keyframes twinkle {
+  0%, 100% { opacity: 1;   transform: scale(1); }
+  50%      { opacity: 0.55; transform: scale(0.8); }
+}
+.libra-star { transform-origin: center; transform-box: fill-box; }
+
+.libra-line {
+  stroke: rgba(255, 255, 255, 0.45);
+  stroke-width: 0.8;
+  fill: none;
+  filter: drop-shadow(0 0 3px rgba(255,255,255,0.4));
+}
+.libra-line.pulse {
+  stroke: white;
+  stroke-width: 1.2;
+  stroke-dasharray: 6 120;
+  stroke-dashoffset: 0;
+  animation: travel 2.8s linear infinite;
+}
+.libra-line.pulse.p2 { animation-delay: 0.9s; }
+@keyframes travel {
+  to { stroke-dashoffset: -126; }
 }
 
-.neural-line {
-  stroke: rgba(255, 255, 255, 0.32);
-  stroke-width: 0.7;
-  fill: none;
+/* ── Shooting stars — streak across the brain canvas ──────── */
+.shooting-stars {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 2;
+  border-radius: 999px;  /* clip to roughly the brain area */
 }
-.neural-line.pulse {
-  stroke: white;
-  stroke-width: 1;
-  stroke-dasharray: 4 100;
-  stroke-dashoffset: 0;
-  animation: travel 2.4s linear infinite;
+.shooting-star {
+  position: absolute;
+  width: 110px; height: 2px;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0)  10%,
+    rgba(255, 255, 255, 0.85) 70%,
+    white 100%);
+  border-radius: 99px;
+  transform-origin: right center;
+  filter:
+    drop-shadow(0 0 5px rgba(255,255,255,0.95))
+    drop-shadow(0 0 14px rgba(125, 211, 252, 0.6))
+    drop-shadow(0 0 24px rgba(167, 139, 250, 0.4));
+  opacity: 0;
+  animation: shoot 1.05s ease-out forwards;
 }
-.neural-line.pulse.p2 { animation-delay: 0.8s; }
-.neural-line.pulse.p3 { animation-delay: 1.6s; }
-@keyframes travel {
-  to { stroke-dashoffset: -104; }
+@keyframes shoot {
+  0%   { opacity: 0; transform: translate(0, 0) rotate(var(--rot, 30deg)); }
+  10%  { opacity: 1; }
+  88%  { opacity: 1; }
+  100% { opacity: 0; transform: translate(var(--dx, 400px), var(--dy, 200px)) rotate(var(--rot, 30deg)); }
 }
 
 /* Connection lines from brain to each company chip */

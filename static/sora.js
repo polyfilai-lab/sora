@@ -398,48 +398,118 @@
     };
   }
 
-  function renderNeuralMesh() {
+  // Libra constellation — 4 main stars (α, β, γ, σ) form the balance / kite,
+  // plus a handful of dim ambient stars for context. Positioned inside the
+  // brain core (radius 72 around BRAIN_CX, BRAIN_CY).
+  function renderLibra() {
     const g = document.getElementById('neural-mesh');
     if (!g) return;
-    const rand = rng('sora-brain-v1');
-    const N = 32;
-    const dots = [];
-    for (let i = 0; i < N; i++) {
-      // Cluster inside the brain core circle (R = 72 around cx, cy)
-      let x, y, ok = false;
-      let tries = 0;
-      while (!ok && tries < 12) {
-        x = BRAIN_CX + (rand() - 0.5) * 130;
-        y = BRAIN_CY + (rand() - 0.5) * 130;
-        const dx = x - BRAIN_CX, dy = y - BRAIN_CY;
-        if (Math.sqrt(dx*dx + dy*dy) < BRAIN_R - 6) ok = true;
+
+    const CX = BRAIN_CX, CY = BRAIN_CY;
+    // Stars in a 100×100 normalized space, then mapped to brain coords.
+    // Real Libra: β (top, brightest), α (lower-left), γ (lower-right), σ (bottom)
+    const SCALE = 1.05; // half-width of the constellation in svg units
+    function pos(nx, ny) {
+      return {
+        x: CX + (nx - 50) * SCALE,
+        y: CY + (ny - 50) * SCALE,
+      };
+    }
+    const beta  = pos(50,  -2);   // top apex of the scale
+    const alpha = pos(  4, 38);   // lower-left
+    const gamma = pos(96, 38);    // lower-right
+    const sigma = pos(50, 70);    // bottom
+    const upsilon = pos(-14, 60); // far left dimmer star
+
+    const lines = [
+      [alpha, beta],
+      [beta,  gamma],
+      [gamma, sigma],
+      [sigma, alpha],
+      [alpha, upsilon],
+    ];
+
+    const stars = [
+      { p: beta,    r: 2.8, bright: true, b: 1 },  // brightest
+      { p: alpha,   r: 2.4, bright: true, b: 2 },
+      { p: sigma,   r: 2.1, bright: true, b: 3 },
+      { p: gamma,   r: 1.9, bright: true, b: 4 },
+      { p: upsilon, r: 1.6, bright: false },
+    ];
+
+    // Ambient background stars — non-constellation, for visual density
+    const rand = rng('libra-ambient-v1');
+    const ambient = [];
+    for (let i = 0; i < 14; i++) {
+      let ax, ay, ok = false, tries = 0;
+      while (!ok && tries < 10) {
+        ax = CX + (rand() - 0.5) * 130;
+        ay = CY + (rand() - 0.5) * 130;
+        const dx = ax - CX, dy = ay - CY;
+        if (Math.sqrt(dx*dx + dy*dy) < BRAIN_R - 8) ok = true;
         tries++;
       }
-      dots.push({ x, y, active: i < 5 });
+      ambient.push({ x: ax, y: ay, r: 0.6 + rand() * 0.7 });
     }
 
     let html = '';
-    // Lines between nearby dots
-    let lineIdx = 0;
-    for (let i = 0; i < dots.length; i++) {
-      for (let j = i + 1; j < dots.length; j++) {
-        const dx = dots[i].x - dots[j].x, dy = dots[i].y - dots[j].y;
-        const d = Math.sqrt(dx*dx + dy*dy);
-        if (d < 38 && rand() < 0.5) {
-          const isPulse = lineIdx < 3;
-          const cls = 'neural-line' + (isPulse ? ' pulse p' + (lineIdx + 1) : '');
-          html += `<line class="${cls}" x1="${dots[i].x.toFixed(1)}" y1="${dots[i].y.toFixed(1)}" x2="${dots[j].x.toFixed(1)}" y2="${dots[j].y.toFixed(1)}"/>`;
-          lineIdx++;
-        }
-      }
-    }
-    // Dots on top
-    dots.forEach((d, i) => {
-      const r = d.active ? 1.8 : 1.3;
-      const cls = 'neural-dot' + (d.active ? ' active d' + (i % 5 + 1) : '');
-      html += `<circle class="${cls}" cx="${d.x.toFixed(1)}" cy="${d.y.toFixed(1)}" r="${r}"/>`;
+    // Lines (drawn first, behind stars)
+    lines.forEach((ln, i) => {
+      const isPulse = i < 2;  // top two edges pulse, rest are static
+      const cls = 'libra-line' + (isPulse ? ' pulse p' + (i + 1) : '');
+      html += `<line class="${cls}" x1="${ln[0].x.toFixed(1)}" y1="${ln[0].y.toFixed(1)}" x2="${ln[1].x.toFixed(1)}" y2="${ln[1].y.toFixed(1)}"/>`;
     });
+    // Ambient dim stars
+    ambient.forEach(a => {
+      html += `<circle class="libra-star" cx="${a.x.toFixed(1)}" cy="${a.y.toFixed(1)}" r="${a.r.toFixed(1)}" opacity="0.55"/>`;
+    });
+    // Main Libra stars
+    stars.forEach(s => {
+      const cls = 'libra-star' + (s.bright ? ' bright b' + s.b : '');
+      html += `<circle class="${cls}" cx="${s.p.x.toFixed(1)}" cy="${s.p.y.toFixed(1)}" r="${s.r}"/>`;
+    });
+
     g.innerHTML = html;
+  }
+
+  // ── Shooting stars — spawn one every ~700–1500ms ─────────
+  let shootingStarsTimer = null;
+  function spawnShootingStar() {
+    const c = document.getElementById('shooting-stars');
+    if (!c) return;
+    const star = document.createElement('div');
+    star.className = 'shooting-star';
+
+    // Random starting point in the upper portion of the canvas
+    const startX = Math.random() * 75;        // 0% – 75%
+    const startY = Math.random() * 55;        // 0% – 55%
+    // Diagonal travel angle (always downward, 20–55° below horizontal)
+    const angle = 18 + Math.random() * 38;
+    const dist  = 320 + Math.random() * 240;  // 320–560 px
+    const dx = Math.cos(angle * Math.PI / 180) * dist;
+    const dy = Math.sin(angle * Math.PI / 180) * dist;
+
+    star.style.left = startX + '%';
+    star.style.top  = startY + '%';
+    star.style.setProperty('--rot', angle + 'deg');
+    star.style.setProperty('--dx', dx.toFixed(0) + 'px');
+    star.style.setProperty('--dy', dy.toFixed(0) + 'px');
+    star.style.animationDuration = (0.85 + Math.random() * 0.55).toFixed(2) + 's';
+    // Slight length variance
+    star.style.width = (80 + Math.random() * 70).toFixed(0) + 'px';
+
+    c.appendChild(star);
+    setTimeout(() => star.remove(), 1600);
+  }
+
+  function startShootingStars() {
+    function loop() {
+      spawnShootingStar();
+      // Occasionally double-up for a richer feel
+      if (Math.random() < 0.18) setTimeout(spawnShootingStar, 220);
+      shootingStarsTimer = setTimeout(loop, 700 + Math.random() * 900);
+    }
+    loop();
   }
 
   function placeChipsAndConnectors() {
@@ -572,8 +642,9 @@
   function init() {
     setGreeting();
     pingAll();
-    renderNeuralMesh();
+    renderLibra();
     placeChipsAndConnectors();
+    startShootingStars();
   }
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
