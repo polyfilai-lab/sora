@@ -48,6 +48,15 @@ SEED_COMPANIES = [
         "color": "#facc15",
         "notes": "goodkidtech.com — in-person, senior-friendly.",
     },
+    {
+        "name": "PolyPets",
+        "tagline": "DTC operating entity for Fairfield's plush brands",
+        "color": "#c9a45d",
+        "notes": "House of brands. Separate operating entity that markets Fairfield-owned plush "
+                 "brands direct-to-consumer. Brand IP stays with Fairfield; PolyPets owns DTC. "
+                 "Folder: /Users/jordanyoung/Documents/PolyPets/. Spin Master/Hasbro endorser model. "
+                 "DTC-exclusive SKU tiers drive why-buy-direct.",
+    },
 ]
 
 
@@ -142,6 +151,42 @@ SEED_PROJECTS = [
         "status": "building",
         "url": "",
         "notes": "You are here. Standalone Flask app deployed to its own Railway service.",
+    },
+
+    # ── PolyPets ────────────────────────────────────────────────────────────
+    {
+        "company": "PolyPets",
+        "name": "Bumbleton",
+        "tagline": "Storybook-woodland plush — Walmart wholesale + DTC",
+        "status": "building",
+        "url": "",
+        "notes": "Sub-Brand 1. Already at Walmart Action Alley at $20. PolyPets DTC layer "
+                 "carries the core line plus DTC-exclusive characters/colorways/sizes Walmart "
+                 "doesn't get. 20 character concepts drafted, launch copy + HTML previews built. "
+                 "Honey gold + sage + cream visual identity. Folder: brands/bumbleton/",
+    },
+    {
+        "company": "PolyPets",
+        "name": "MoonMeadow",
+        "tagline": "Weighted plush — wellness/sensory for kids",
+        "status": "building",
+        "url": "",
+        "notes": "Sub-Brand 2. Pre-launch national brand. 3-lb weighted plush, "
+                 "proprioceptive comfort positioning. Compliance review of weighted/wellness "
+                 "claims required before public launch. Sage olive + navy + cream visual identity. "
+                 "Educational content drafted (About Weighted Plush, Sensory Guide, Bedtime). "
+                 "Folder: brands/moonmeadow/",
+    },
+    {
+        "company": "PolyPets",
+        "name": "PolyPets Command Center",
+        "tagline": "Internal back-office — multi-store ops + Shopify/NetSuite/Meta",
+        "status": "building",
+        "url": "",
+        "notes": "Flask app at command-center/. Runs locally on port 5151. Shopify Admin API "
+                 "(per sub-brand store), NetSuite (Fairfield ERP) via SuiteTalk REST + SuiteQL, "
+                 "Meta Ads catalog feed + CAPI. Will deploy to Railway as command.polypets.com "
+                 "when ready. Same Python/Flask stack as Cortex.",
     },
 ]
 
