@@ -75,14 +75,25 @@
     {% set in_flight = projects_flat | selectattr('status', 'equalto', 'building') | list %}
     {% if in_flight %}
       {% for p in in_flight[:6] %}
-        <a class="in-flight-row" href="{% if p.url %}/frame?p={{ p.id }}{% else %}/project/{{ p.id }}{% endif %}">
-          <span class="dot"></span>
-          <span class="name">
-            {{ p.name }}
-            {% if p.company_name %}<span class="sub">{{ p.company_name }}</span>{% endif %}
-          </span>
-          <span class="meta">building</span>
-        </a>
+        {% if p.url %}
+          <a class="in-flight-row" href="{{ p.url }}" target="_blank" rel="noopener" title="Open {{ p.url }}">
+            <span class="dot"></span>
+            <span class="name">
+              {{ p.name }}
+              {% if p.company_name %}<span class="sub">{{ p.company_name }}</span>{% endif %}
+            </span>
+            <span class="meta">live ↗</span>
+          </a>
+        {% else %}
+          <div class="in-flight-row is-pending">
+            <span class="dot"></span>
+            <span class="name">
+              {{ p.name }}
+              {% if p.company_name %}<span class="sub">{{ p.company_name }}</span>{% endif %}
+            </span>
+            <button class="meta add-url-mini" onclick="Sora.promptSetUrl('{{ p.id }}')" title="Set live URL">+ URL</button>
+          </div>
+        {% endif %}
       {% endfor %}
     {% else %}
       <div class="sora-empty">Nothing in flight right now. Take a breath.</div>

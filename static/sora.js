@@ -93,6 +93,18 @@
     api('PUT', '/api/companies/' + id, { name: newName }).then(() => location.reload());
   };
 
+  // Quick-set the live URL for a project (used by "+ URL" buttons)
+  Sora.promptSetUrl = async function (projectId) {
+    const url = prompt('Live URL for this project (https://…):');
+    if (!url || !url.trim()) return;
+    let clean = url.trim();
+    if (!/^https?:\/\//i.test(clean)) clean = 'https://' + clean;
+    try {
+      await api('PUT', '/api/projects/' + projectId, { url: clean });
+      location.reload();
+    } catch (e) { alert(e.message); }
+  };
+
   // ── ideas list ───────────────────────────────────────────
   Sora.promoteIdea = async function (id) {
     try { await api('POST', '/api/ideas/' + id + '/promote', {}); location.reload(); }
@@ -670,16 +682,27 @@
       const projCount = (c.projects || []).length;
       const liveCount = (c.projects || []).filter(p => p.status === 'live').length;
 
-      // Build the capsule project list HTML
+      // Build the capsule project list HTML.
+      // Primary click on the row = open the LIVE URL in a new tab when one exists.
+      // Trailing icons: ⊕ Frame (in-app embed), ⓘ Notes/settings.
+      // No URL yet? Replace ⊕ with a "+ URL" prompt to add one in one click.
       const projectsHtml = (c.projects || []).length
         ? (c.projects || []).map(p => {
-            const href = p.url ? `/frame?p=${p.id}` : `/project/${p.id}`;
+            const hasUrl = !!p.url;
+            const rowTag = hasUrl ? 'a' : 'div';
+            const rowAttrs = hasUrl
+              ? `href="${escapeHtml(p.url)}" target="_blank" rel="noopener" title="Open ${escapeHtml(p.url)}"`
+              : `title="No live URL yet — click + URL to set one"`;
+            const liveBtn = hasUrl
+              ? `<a class="info ext" href="/frame?p=${p.id}" onclick="event.stopPropagation()" title="Open in Frame view">⊕</a>`
+              : `<button class="info add-url" onclick="event.preventDefault();event.stopPropagation();Sora.promptSetUrl('${p.id}')" title="Set the live URL for this project">+ URL</button>`;
             return `
-              <a class="chip-capsule-item" href="${href}" title="${escapeHtml(p.name)}${p.url ? ' — open in Frame' : ''}">
+              <${rowTag} class="chip-capsule-item ${hasUrl ? 'is-live' : 'is-pending'}" ${rowAttrs}>
                 <span class="dot s-${p.status}"></span>
                 <span class="name">${escapeHtml(p.name)}</span>
+                ${liveBtn}
                 <a class="info" href="/project/${p.id}" onclick="event.stopPropagation()" title="Notes &amp; settings">ⓘ</a>
-              </a>`;
+              </${rowTag}>`;
           }).join('')
         : '<div class="chip-capsule-empty">No projects under this company yet.</div>';
 

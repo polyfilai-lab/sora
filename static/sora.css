@@ -541,17 +541,81 @@ input, select, textarea { font-family: inherit; color: inherit; }
 .chip-capsule-item:hover .name { color: var(--sky-700); }
 .chip-capsule-item .info {
   display: inline-flex; align-items: center; justify-content: center;
-  width: 22px; height: 22px;
+  min-width: 22px; height: 22px;
+  padding: 0 6px;
   border-radius: 5px;
+  border: none;
   font-size: 12px;
+  font-weight: 500;
+  font-family: inherit;
   color: var(--ink-4);
   background: transparent;
+  text-decoration: none;
+  cursor: pointer;
   transition: all 0.12s;
 }
 .chip-capsule-item .info:hover {
   color: var(--sky-700);
   background: white;
 }
+/* Frame view icon */
+.chip-capsule-item .info.ext {
+  color: var(--sky-600);
+  font-size: 13px;
+}
+.chip-capsule-item .info.ext:hover {
+  color: var(--sky-700);
+  background: var(--sky-50);
+}
+/* "+ URL" affordance for projects without a live URL */
+.chip-capsule-item .info.add-url {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-4);
+  border: 1px dashed var(--ink-5);
+  padding: 0 7px;
+  height: 22px;
+}
+.chip-capsule-item .info.add-url:hover {
+  color: var(--sky-700);
+  border-color: var(--sky-400);
+  background: var(--sky-50);
+}
+/* Visually mark rows that don't have a live URL yet (slight de-emphasis) */
+.chip-capsule-item.is-pending .name { color: var(--ink-3); }
+.chip-capsule-item.is-pending:hover .name { color: var(--ink-2); }
+.chip-capsule-item.is-live .name::after {
+  content: '↗';
+  margin-left: 6px;
+  font-size: 11px;
+  color: var(--sky-500);
+  opacity: 0;
+  transition: opacity 0.12s;
+}
+.chip-capsule-item.is-live:hover .name::after { opacity: 1; }
+
+/* "+ URL" pill inside the in-flight list */
+.in-flight-row .add-url-mini {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-4);
+  background: transparent;
+  border: 1px dashed var(--ink-5);
+  border-radius: 4px;
+  padding: 3px 8px;
+  cursor: pointer;
+  transition: all 0.12s;
+}
+.in-flight-row .add-url-mini:hover {
+  color: var(--sky-700);
+  border-color: var(--sky-400);
+  background: white;
+}
+.in-flight-row.is-pending { color: var(--ink-3); }
 .chip-capsule-empty {
   text-align: center;
   padding: 18px 8px;
