@@ -381,6 +381,109 @@
   });
 
   /* ──────────────────────────────────────────────────────────
+     Company logos — original SVG marks, one per company.
+     All use currentColor so they pick up each chip's accent color.
+     ────────────────────────────────────────────────────────── */
+  const COMPANY_LOGOS = {
+    // Fairfield Processing — soft pillow with two tufting points
+    fairfield: `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+      <rect x="4" y="9" width="24" height="14" rx="6"
+            fill="currentColor" fill-opacity="0.16"
+            stroke="currentColor" stroke-width="1.8"/>
+      <circle cx="11" cy="16" r="0.9" fill="currentColor"/>
+      <circle cx="21" cy="16" r="0.9" fill="currentColor"/>
+    </svg>`,
+
+    // Hillbrook Labs — three-node agent network (triangle of connected dots)
+    hillbrook: `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+      <g stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+        <line x1="9"  y1="22" x2="16" y2="9"/>
+        <line x1="16" y1="9"  x2="23" y2="22"/>
+        <line x1="9"  y1="22" x2="23" y2="22"/>
+      </g>
+      <circle cx="16" cy="9"  r="3.2" fill="currentColor"/>
+      <circle cx="9"  cy="22" r="3.2" fill="currentColor"/>
+      <circle cx="23" cy="22" r="3.2" fill="currentColor"/>
+      <circle cx="15.4" cy="8.3"  r="0.9" fill="white" opacity="0.55"/>
+      <circle cx="8.4"  cy="21.3" r="0.9" fill="white" opacity="0.55"/>
+      <circle cx="22.4" cy="21.3" r="0.9" fill="white" opacity="0.55"/>
+    </svg>`,
+
+    // Verify — stylized tooth with a checkmark inside
+    verify: `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+      <path d="M11 5 C9 5 8 7 8 10 L8 19 C8 24 10 27 12 27 C13 27 14 25 14 22 C14 20 14 19 16 19 C18 19 18 20 18 22 C18 25 19 27 20 27 C22 27 24 24 24 19 L24 10 C24 7 23 5 21 5 C19 5 18 6 16 6 C14 6 13 5 11 5 Z"
+            fill="currentColor" fill-opacity="0.18"
+            stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+      <path d="M11 15 L14 18 L20 12"
+            stroke="currentColor" stroke-width="2.2"
+            stroke-linecap="round" stroke-linejoin="round"
+            fill="none"/>
+    </svg>`,
+
+    // CurbAppeal — house with sparkles (post-wash sheen)
+    curbappeal: `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+      <path d="M4 26 L4 17 L15 8 L26 17 L26 26 Z"
+            fill="currentColor" fill-opacity="0.15"
+            stroke="currentColor" stroke-width="1.7"
+            stroke-linejoin="round"/>
+      <rect x="12" y="19" width="6" height="7" rx="1" fill="currentColor" opacity="0.45"/>
+      <rect x="6"  y="19" width="4" height="4" rx="0.5" fill="currentColor" opacity="0.32"/>
+      <g stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+        <line x1="23" y1="5"  x2="23" y2="9"/>
+        <line x1="21" y1="7"  x2="25" y2="7"/>
+      </g>
+      <g stroke="currentColor" stroke-width="1.1" stroke-linecap="round" opacity="0.7">
+        <line x1="28" y1="11" x2="28" y2="14"/>
+        <line x1="26.5" y1="12.5" x2="29.5" y2="12.5"/>
+      </g>
+    </svg>`,
+
+    // Good Kid Tech — tablet with a heart on screen
+    goodkidtech: `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+      <rect x="6" y="4" width="20" height="24" rx="3"
+            stroke="currentColor" stroke-width="1.8"
+            fill="currentColor" fill-opacity="0.1"/>
+      <line x1="13" y1="7" x2="19" y2="7"
+            stroke="currentColor" stroke-width="1" stroke-linecap="round" opacity="0.5"/>
+      <circle cx="16" cy="25" r="0.9" stroke="currentColor" stroke-width="1" fill="none"/>
+      <path d="M16 21 C12 17.5 11 14.5 13 12.5 C14.2 11.3 15.5 11.8 16 13.2 C16.5 11.8 17.8 11.3 19 12.5 C21 14.5 20 17.5 16 21 Z"
+            fill="currentColor"/>
+    </svg>`,
+
+    // PolyPets — friendly bear face (plush)
+    polypets: `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="9"  cy="11" r="3.5"
+              fill="currentColor" fill-opacity="0.2"
+              stroke="currentColor" stroke-width="1.5"/>
+      <circle cx="23" cy="11" r="3.5"
+              fill="currentColor" fill-opacity="0.2"
+              stroke="currentColor" stroke-width="1.5"/>
+      <circle cx="9"  cy="11" r="1.4" fill="currentColor" opacity="0.45"/>
+      <circle cx="23" cy="11" r="1.4" fill="currentColor" opacity="0.45"/>
+      <circle cx="16" cy="18" r="9"
+              fill="currentColor" fill-opacity="0.16"
+              stroke="currentColor" stroke-width="1.8"/>
+      <circle cx="13" cy="16.5" r="1.2" fill="currentColor"/>
+      <circle cx="19" cy="16.5" r="1.2" fill="currentColor"/>
+      <ellipse cx="16" cy="20" rx="3" ry="2.2" fill="currentColor" opacity="0.42"/>
+      <ellipse cx="16" cy="18.8" rx="1" ry="0.7" fill="currentColor"/>
+      <path d="M14.5 21 Q16 22 17.5 21"
+            stroke="currentColor" stroke-width="1.2" stroke-linecap="round" fill="none"/>
+    </svg>`,
+  };
+
+  function logoFor(name) {
+    const k = String(name || '').toLowerCase().replace(/[^a-z]/g, '');
+    if (k.includes('fairfield'))                       return COMPANY_LOGOS.fairfield;
+    if (k.includes('hillbrook'))                       return COMPANY_LOGOS.hillbrook;
+    if (k.includes('verify'))                          return COMPANY_LOGOS.verify;
+    if (k.includes('curb') || k.includes('appeal'))    return COMPANY_LOGOS.curbappeal;
+    if (k.includes('goodkid') || k.includes('kidtech'))return COMPANY_LOGOS.goodkidtech;
+    if (k.includes('poly') || k.includes('pets'))      return COMPANY_LOGOS.polypets;
+    return null;
+  }
+
+  /* ──────────────────────────────────────────────────────────
      BRAIN HUB — generates neural mesh, places chips, wires hover
      ────────────────────────────────────────────────────────── */
   const BRAIN_CX = 500, BRAIN_CY = 390;
@@ -706,10 +809,18 @@
           }).join('')
         : '<div class="chip-capsule-empty">No projects under this company yet.</div>';
 
+      const logo = logoFor(c.name);
+      const chipMark   = logo
+        ? `<div class="company-chip-logo">${logo}</div>`
+        : `<div class="company-chip-dot"></div>`;
+      const capsuleMark = logo
+        ? `<div class="chip-capsule-logo">${logo}</div>`
+        : `<div class="chip-capsule-band"></div>`;
+
       chipHtml += `
         <div class="company-chip" data-cid="${c.id}"
              style="left: ${pctX}%; top: ${pctY}%; --c: ${c.color};">
-          <div class="company-chip-dot"></div>
+          ${chipMark}
           <div class="company-chip-text">
             <div class="company-chip-name">${escapeHtml(c.name)}</div>
             <div class="company-chip-count">${projCount} project${projCount === 1 ? '' : 's'}</div>
@@ -718,7 +829,7 @@
         <div class="chip-capsule ${side}" data-cid="${c.id}"
              style="left: ${pctX}%; top: ${pctY}%; --c: ${c.color};">
           <div class="chip-capsule-head">
-            <div class="chip-capsule-band"></div>
+            ${capsuleMark}
             <div class="chip-capsule-titles">
               <div class="chip-capsule-name">${escapeHtml(c.name)}</div>
               ${c.tagline ? `<div class="chip-capsule-tag">${escapeHtml(c.tagline)}</div>` : ''}

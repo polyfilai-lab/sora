@@ -177,17 +177,10 @@ SEED_PROJECTS = [
                  "Educational content drafted (About Weighted Plush, Sensory Guide, Bedtime). "
                  "Folder: brands/moonmeadow/",
     },
-    {
-        "company": "PolyPets",
-        "name": "PolyPets Command Center",
-        "tagline": "Internal back-office — multi-store ops + Shopify/NetSuite/Meta",
-        "status": "building",
-        "url": "",
-        "notes": "Flask app at command-center/. Runs locally on port 5151. Shopify Admin API "
-                 "(per sub-brand store), NetSuite (Fairfield ERP) via SuiteTalk REST + SuiteQL, "
-                 "Meta Ads catalog feed + CAPI. Will deploy to Railway as command.polypets.com "
-                 "when ready. Same Python/Flask stack as Cortex.",
-    },
+    # Note: PolyPets Command Center is internal infrastructure (Flask back-office at
+    # command-center/), not a customer-facing brand. Per same convention as Hillbrook Labs
+    # (which only lists customer products as projects), the Command Center lives in the
+    # PolyPets folder but is not a Sora project.
 ]
 
 
