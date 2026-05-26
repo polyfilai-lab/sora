@@ -387,7 +387,7 @@ input, select, textarea { font-family: inherit; color: inherit; }
   pointer-events: auto;
   display: inline-flex;
   align-items: center;
-  height: 60px;
+  height: 90px;
   cursor: pointer;
   transform: translate(-50%, -50%);
   transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
@@ -401,7 +401,7 @@ input, select, textarea { font-family: inherit; color: inherit; }
 }
 .company-chip:hover, .company-chip.is-active {
   transform: translate(-50%, -50%) scale(1.08);
-  filter: drop-shadow(0 8px 22px color-mix(in srgb, var(--c, var(--sky-500)) 40%, transparent));
+  filter: drop-shadow(0 12px 28px color-mix(in srgb, var(--c, var(--sky-500)) 45%, transparent));
 }
 /* Fallback dot when no logo exists for a company yet */
 .company-chip-dot {
@@ -418,25 +418,26 @@ input, select, textarea { font-family: inherit; color: inherit; }
   justify-content: center;
   height: 100%;
   background: white;
-  border-radius: 12px;
-  padding: 8px 12px;
+  border-radius: 16px;
+  padding: 12px 18px;
   box-shadow:
-    0 6px 22px rgba(2, 132, 199, 0.16),
-    0 2px 6px rgba(15, 23, 42, 0.08);
+    0 10px 30px rgba(2, 132, 199, 0.18),
+    0 3px 10px rgba(15, 23, 42, 0.09);
   color: var(--c, var(--sky-500));
 }
 .company-chip-logo.is-img img {
   display: block;
   height: 100%;
   width: auto;
-  max-height: 44px;
+  max-height: 66px;
+  max-width: 180px;
   object-fit: contain;
   object-position: center;
 }
 .company-chip-logo.is-svg svg {
   display: block;
-  height: 44px;
-  width: 44px;
+  height: 66px;
+  width: 66px;
 }
 .company-chip-text { line-height: 1.2; }
 .company-chip-name {
