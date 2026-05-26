@@ -35,9 +35,13 @@ def _inject_version():
     return {"app_version": APP_VERSION}
 
 # ── Basic Auth ──────────────────────────────────────────────────────────────
+# Auth is DISABLED at the code level. The env vars SORA_USERNAME / SORA_PASSWORD
+# are ignored entirely — Sora is intentionally public for now. To re-enable,
+# restore the original `_require_auth` body that checks `_AUTH_ENABLED` against
+# the env vars. (Original kept in git history.)
 _AUTH_USER = os.environ.get("SORA_USERNAME")
 _AUTH_PASS = os.environ.get("SORA_PASSWORD")
-_AUTH_ENABLED = bool(_AUTH_USER and _AUTH_PASS)
+_AUTH_ENABLED = False  # ← hard-disabled regardless of env vars
 
 
 def _check_basic_auth(auth) -> bool:
@@ -50,18 +54,7 @@ def _check_basic_auth(auth) -> bool:
 
 @app.before_request
 def _require_auth():
-    if not _AUTH_ENABLED:
-        return None
-    # Allow health-check endpoint without auth (so Railway can monitor)
-    if request.path == "/healthz":
-        return None
-    if _check_basic_auth(request.authorization):
-        return None
-    return (
-        "Authentication required.",
-        401,
-        {"WWW-Authenticate": 'Basic realm="Sora"'},
-    )
+    return None  # auth disabled — Sora is public
 
 
 # ── Pages ───────────────────────────────────────────────────────────────────
