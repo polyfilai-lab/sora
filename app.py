@@ -11,7 +11,12 @@ from __future__ import annotations
 
 import os
 import secrets as _secrets
+import time as _time
 from pathlib import Path
+
+# Bumps every time the app process starts → defeats stale browser cache after
+# each Railway redeploy.
+APP_VERSION = str(int(_time.time()))
 
 import requests
 from dotenv import load_dotenv
@@ -22,6 +27,12 @@ load_dotenv(Path(__file__).resolve().parent / ".env", override=True)
 import store
 
 app = Flask(__name__, template_folder="templates", static_folder="static")
+
+
+@app.context_processor
+def _inject_version():
+    """Expose APP_VERSION to all templates as {{ app_version }} for cache busts."""
+    return {"app_version": APP_VERSION}
 
 # ── Basic Auth ──────────────────────────────────────────────────────────────
 _AUTH_USER = os.environ.get("SORA_USERNAME")
