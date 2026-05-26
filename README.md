@@ -140,3 +140,4 @@ Sora/
 - **Status change** → open a project, click Edit, change Status, Save
 
 Everything saves immediately to `data/sora.json`.
+# rebuild Tue May 26 11:26:43 EDT 2026
