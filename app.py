@@ -338,9 +338,19 @@ _bootstrap_if_empty()
 
 # Idempotent migrations — safe to run on every boot. They only act if the
 # old state is detected.
+POLYPETS_BASE_URL = "https://web-production-0725a.up.railway.app"
+POLYPETS_PROJECT_URLS = {
+    "Bumbleton":  f"{POLYPETS_BASE_URL}/bumbleton",
+    "MoonMeadow": f"{POLYPETS_BASE_URL}/moonmeadow",
+}
+
+
 def _run_idempotent_migrations():
     try:
         data = store.load()
+        changed = False
+
+        # M1 — strip the legacy Jordan (Portfolio) company + meta-Sora project
         portfolio = next(
             (c for c in data["companies"] if c["name"].strip().lower() in
              {"jordan (portfolio)", "jordan portfolio"}),
@@ -357,8 +367,21 @@ def _run_idempotent_migrations():
                 kept.append(p)
             data["projects"] = kept
             data["companies"] = [c for c in data["companies"] if c["id"] != pcid]
-            store.save(data)
+            changed = True
             print("[sora] migration: removed Jordan (Portfolio) + Sora project", flush=True)
+
+        # M2 — wire PolyPets brand projects to their Railway routes
+        from datetime import datetime
+        for p in data["projects"]:
+            target = POLYPETS_PROJECT_URLS.get(p["name"])
+            if target and p.get("url") != target:
+                p["url"] = target
+                p["updated_at"] = datetime.utcnow().isoformat(timespec="seconds") + "Z"
+                changed = True
+                print(f"[sora] migration: set {p['name']} URL → {target}", flush=True)
+
+        if changed:
+            store.save(data)
     except Exception as e:
         print(f"[sora] migration skipped: {type(e).__name__}: {e}", flush=True)
 
