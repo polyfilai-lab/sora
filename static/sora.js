@@ -472,13 +472,19 @@
     </svg>`,
   };
 
-  // Real logo files (drop them into /static/logos/ to override the inline marks)
-  const LOGO_FILES = {
-    curbappeal:  '/static/logos/curbappeal.svg',
-    goodkidtech: '/static/logos/goodkidtech.jpg',
-    // Add a real fairfield.svg / fairfield.png to /static/logos/ to use the
-    // actual Fairfield brand mark. Same for hillbrook, verify, polypets.
-  };
+  // Real logo files — populated at init from /api/logos so dropping a file
+  // into /static/logos/<slug>.svg|png|jpg|webp picks it up automatically.
+  let LOGO_FILES = {};
+
+  async function loadLogoIndex() {
+    try {
+      const r = await fetch('/api/logos');
+      const j = await r.json();
+      LOGO_FILES = j.logos || {};
+    } catch (_) {
+      LOGO_FILES = {};
+    }
+  }
 
   function slugFor(name) {
     const k = String(name || '').toLowerCase().replace(/[^a-z]/g, '');
@@ -963,11 +969,12 @@
   }
 
   // ── init ─────────────────────────────────────────────────
-  function init() {
+  async function init() {
     setGreeting();
     pingAll();
     setupConstellation3D();
     animateConstellation();
+    await loadLogoIndex();
     placeChipsAndConnectors();
     startShootingStars();
   }

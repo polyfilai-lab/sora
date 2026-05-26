@@ -270,6 +270,24 @@ def api_sync_railway():
         return jsonify(ok=False, error=f"{type(e).__name__}: {e}"), 500
 
 
+# ── API: Logo file index ────────────────────────────────────────────────────
+# Lists everything in /static/logos/ so the frontend can auto-discover real
+# brand assets without us having to edit JS every time a new file appears.
+@app.get("/api/logos")
+def api_logos():
+    logos_dir = Path(__file__).resolve().parent / "static" / "logos"
+    out: dict[str, str] = {}
+    if logos_dir.exists():
+        for f in logos_dir.iterdir():
+            if not f.is_file() or f.name.startswith("."):
+                continue
+            if f.suffix.lower() not in {".svg", ".png", ".jpg", ".jpeg", ".webp", ".gif"}:
+                continue
+            slug = f.stem.lower().replace("-", "").replace("_", "")
+            out[slug] = f"/static/logos/{f.name}"
+    return jsonify(logos=out)
+
+
 # ── API: Health-check ping (server-side, avoids CORS) ───────────────────────
 @app.get("/api/ping")
 def api_ping():
