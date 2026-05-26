@@ -380,35 +380,28 @@ input, select, textarea { font-family: inherit; color: inherit; }
   position: absolute; inset: 0;
   pointer-events: none;
 }
+/* Chip is now just a positioning anchor — no circular frame, no glow ring.
+   The logo itself sits on its own small white card and floats. */
 .company-chip {
   position: absolute;
   pointer-events: auto;
-  display: flex; align-items: center; justify-content: center;
-  width: 72px; height: 72px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.92);
-  border: 1px solid rgba(255, 255, 255, 0.95);
-  box-shadow:
-    var(--shadow-md),
-    0 0 0 4px color-mix(in srgb, var(--c, var(--sky-500)) 12%, transparent),
-    0 0 24px color-mix(in srgb, var(--c, var(--sky-500)) 30%, transparent);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  display: inline-flex;
+  align-items: center;
+  height: 60px;
   cursor: pointer;
   transform: translate(-50%, -50%);
   transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
-              box-shadow 0.25s,
-              border-color 0.25s;
+              filter 0.25s;
   will-change: transform;
-  overflow: hidden;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  overflow: visible;
 }
 .company-chip:hover, .company-chip.is-active {
-  transform: translate(-50%, -50%) scale(1.1);
-  box-shadow:
-    var(--shadow-lg),
-    0 0 0 5px color-mix(in srgb, var(--c, var(--sky-500)) 25%, transparent),
-    0 0 36px color-mix(in srgb, var(--c, var(--sky-500)) 45%, transparent);
-  border-color: color-mix(in srgb, var(--c, var(--sky-500)) 50%, white);
+  transform: translate(-50%, -50%) scale(1.08);
+  filter: drop-shadow(0 8px 22px color-mix(in srgb, var(--c, var(--sky-500)) 40%, transparent));
 }
 /* Fallback dot when no logo exists for a company yet */
 .company-chip-dot {
@@ -417,27 +410,33 @@ input, select, textarea { font-family: inherit; color: inherit; }
   box-shadow: 0 0 16px var(--c, var(--sky-500));
 }
 
-/* Logo fills most of the circular chip */
+/* Logo floats on its own white card, sized to the logo's aspect ratio
+   so nothing is cropped or stretched. */
 .company-chip-logo {
-  width: 100%; height: 100%;
-  display: flex; align-items: center; justify-content: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  background: white;
+  border-radius: 12px;
+  padding: 8px 12px;
+  box-shadow:
+    0 6px 22px rgba(2, 132, 199, 0.16),
+    0 2px 6px rgba(15, 23, 42, 0.08);
   color: var(--c, var(--sky-500));
 }
-/* Inline SVG mark — uses currentColor + a light accent-tinted backdrop */
-.company-chip-logo.is-svg {
-  background: color-mix(in srgb, var(--c, var(--sky-500)) 12%, white);
-  padding: 14px;
+.company-chip-logo.is-img img {
+  display: block;
+  height: 100%;
+  width: auto;
+  max-height: 44px;
+  object-fit: contain;
+  object-position: center;
 }
 .company-chip-logo.is-svg svg {
-  width: 100%; height: 100%;
   display: block;
-}
-/* Real brand image — fills the chip edge-to-edge */
-.company-chip-logo.is-img img {
-  width: 100%; height: 100%;
-  object-fit: cover;
-  object-position: center;
-  display: block;
+  height: 44px;
+  width: 44px;
 }
 .company-chip-text { line-height: 1.2; }
 .company-chip-name {
@@ -494,26 +493,31 @@ input, select, textarea { font-family: inherit; color: inherit; }
   flex-shrink: 0;
 }
 .chip-capsule-logo {
-  width: 44px; height: 44px;
+  height: 48px;
+  min-width: 48px;
+  max-width: 120px;
   flex-shrink: 0;
-  display: flex; align-items: center; justify-content: center;
-  border-radius: 11px;
-  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: white;
+  padding: 6px 10px;
+  box-shadow: 0 4px 14px rgba(2, 132, 199, 0.12),
+              0 1px 3px rgba(15, 23, 42, 0.08);
   color: var(--c, var(--sky-500));
 }
-.chip-capsule-logo.is-svg {
-  background: color-mix(in srgb, var(--c, var(--sky-500)) 14%, white);
-  padding: 6px;
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--c, var(--sky-500)) 24%, transparent) inset;
+.chip-capsule-logo.is-img img {
+  display: block;
+  height: 100%;
+  width: auto;
+  max-height: 36px;
+  object-fit: contain;
 }
 .chip-capsule-logo.is-svg svg {
-  width: 100%; height: 100%;
   display: block;
-}
-.chip-capsule-logo.is-img img {
-  width: 100%; height: 100%;
-  object-fit: cover;
-  display: block;
+  height: 36px;
+  width: 36px;
 }
 .chip-capsule-titles {
   flex: 1; min-width: 0;
