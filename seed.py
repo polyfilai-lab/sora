@@ -142,6 +142,18 @@ SEED_PROJECTS = [
         "url": "https://goodkidtech.com",
         "notes": "Non-profit. Wants new senior-friendly tools (noted 2026-05-17).",
     },
+    {
+        "company": "Good Kid Tech",
+        "name": "Spot the Scam",
+        "tagline": "Senior-friendly scam & phishing spotting trainer",
+        "status": "building",
+        "url": "",
+        "notes": "Interactive 'Can you spot the scam?' trainer for seniors — practice "
+                 "identifying scam / phishing emails, texts, and calls. Standalone HTML tool "
+                 "in the Good Kid Tech in-person curriculum. Source: "
+                 "/Users/jordanyoung/Documents/GoodKidTech/spot-the-scam/index.html. "
+                 "Not yet hosted — add a URL once deployed to light up the live health dot.",
+    },
 
     # ── Jordan (Portfolio) ──────────────────────────────────────────────────
     {

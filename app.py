@@ -373,6 +373,41 @@ def _run_idempotent_migrations():
                 changed = True
                 print(f"[sora] migration: set {p['name']} URL → {target}", flush=True)
 
+        # M3 — register the Good Kid Tech "Spot the Scam" senior tool.
+        # Idempotent: only adds if no project named "Spot the Scam" exists.
+        # Attach to the Good Kid Tech company by NAME — prod volume IDs are
+        # uuid-generated and differ from the local data file, so never hardcode
+        # the company id here.
+        if not any(p.get("name") == "Spot the Scam" for p in data["projects"]):
+            gkt = next(
+                (c for c in data["companies"]
+                 if c["name"].strip().lower() == "good kid tech"),
+                None,
+            )
+            now = datetime.utcnow().isoformat(timespec="seconds") + "Z"
+            data["projects"].append({
+                "id":          store.new_id("p_"),
+                "company_id":  gkt["id"] if gkt else None,
+                "name":        "Spot the Scam",
+                "tagline":     "Senior-friendly scam & phishing spotting trainer",
+                "status":      "building",
+                "url":         "",
+                "tokens_used": 0,
+                "notes":       "Interactive 'Can you spot the scam?' trainer for seniors — "
+                               "practice identifying scam / phishing emails, texts, and calls. "
+                               "Standalone HTML tool in the Good Kid Tech in-person curriculum. "
+                               "Source: /Users/jordanyoung/Documents/GoodKidTech/spot-the-scam/"
+                               "index.html. Not yet hosted — add a URL once deployed to light "
+                               "up the live health dot.",
+                "changelog":   [],
+                "ideas":       [],
+                "sub_tools":   [],
+                "created_at":  now,
+                "updated_at":  now,
+            })
+            changed = True
+            print("[sora] migration: added Good Kid Tech 'Spot the Scam' project", flush=True)
+
         if changed:
             store.save(data)
     except Exception as e:
