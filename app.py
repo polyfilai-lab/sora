@@ -373,32 +373,35 @@ def _run_idempotent_migrations():
                 changed = True
                 print(f"[sora] migration: set {p['name']} URL → {target}", flush=True)
 
-        # M3 — register the Good Kid Tech "Spot the Scam" senior tool.
-        # Idempotent: only adds if no project named "Spot the Scam" exists.
-        # Attach to the Good Kid Tech company by NAME — prod volume IDs are
-        # uuid-generated and differ from the local data file, so never hardcode
-        # the company id here.
-        if not any(p.get("name") == "Spot the Scam" for p in data["projects"]):
+        # M3 — Good Kid Tech "Spot the Scam" tool: ensure it exists AND points
+        # at its live GitHub Pages URL. Idempotent: adds the project if missing,
+        # and corrects the url/status if they drift (e.g. the earlier deploy
+        # added it as "building" with no URL — this brings it to live). Attach
+        # to the Good Kid Tech company by NAME — prod volume IDs are uuid-
+        # generated and differ from the local data file, so never hardcode the id.
+        SPOT_THE_SCAM_URL = "https://polyfilai-lab.github.io/goodkidtech/spot-the-scam/"
+        STS_NOTES = ("Interactive 'Can you spot the scam?' trainer for seniors — practice "
+                     "identifying scam / phishing emails, texts, and calls. Static HTML tool "
+                     "in the Good Kid Tech curriculum, hosted on GitHub Pages "
+                     "(repo: polyfilai-lab/goodkidtech). Source: "
+                     "/Users/jordanyoung/Documents/GoodKidTech/spot-the-scam/.")
+        now = datetime.utcnow().isoformat(timespec="seconds") + "Z"
+        sts = next((p for p in data["projects"] if p.get("name") == "Spot the Scam"), None)
+        if sts is None:
             gkt = next(
                 (c for c in data["companies"]
                  if c["name"].strip().lower() == "good kid tech"),
                 None,
             )
-            now = datetime.utcnow().isoformat(timespec="seconds") + "Z"
             data["projects"].append({
                 "id":          store.new_id("p_"),
                 "company_id":  gkt["id"] if gkt else None,
                 "name":        "Spot the Scam",
                 "tagline":     "Senior-friendly scam & phishing spotting trainer",
-                "status":      "building",
-                "url":         "",
+                "status":      "live",
+                "url":         SPOT_THE_SCAM_URL,
                 "tokens_used": 0,
-                "notes":       "Interactive 'Can you spot the scam?' trainer for seniors — "
-                               "practice identifying scam / phishing emails, texts, and calls. "
-                               "Standalone HTML tool in the Good Kid Tech in-person curriculum. "
-                               "Source: /Users/jordanyoung/Documents/GoodKidTech/spot-the-scam/"
-                               "index.html. Not yet hosted — add a URL once deployed to light "
-                               "up the live health dot.",
+                "notes":       STS_NOTES,
                 "changelog":   [],
                 "ideas":       [],
                 "sub_tools":   [],
@@ -406,7 +409,14 @@ def _run_idempotent_migrations():
                 "updated_at":  now,
             })
             changed = True
-            print("[sora] migration: added Good Kid Tech 'Spot the Scam' project", flush=True)
+            print("[sora] migration: added Good Kid Tech 'Spot the Scam' project (live)", flush=True)
+        elif sts.get("url") != SPOT_THE_SCAM_URL or sts.get("status") != "live":
+            sts["url"] = SPOT_THE_SCAM_URL
+            sts["status"] = "live"
+            sts["notes"] = STS_NOTES
+            sts["updated_at"] = now
+            changed = True
+            print("[sora] migration: set 'Spot the Scam' → live + Pages URL", flush=True)
 
         if changed:
             store.save(data)

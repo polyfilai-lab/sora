@@ -146,13 +146,13 @@ SEED_PROJECTS = [
         "company": "Good Kid Tech",
         "name": "Spot the Scam",
         "tagline": "Senior-friendly scam & phishing spotting trainer",
-        "status": "building",
-        "url": "",
+        "status": "live",
+        "url": "https://polyfilai-lab.github.io/goodkidtech/spot-the-scam/",
         "notes": "Interactive 'Can you spot the scam?' trainer for seniors — practice "
-                 "identifying scam / phishing emails, texts, and calls. Standalone HTML tool "
-                 "in the Good Kid Tech in-person curriculum. Source: "
-                 "/Users/jordanyoung/Documents/GoodKidTech/spot-the-scam/index.html. "
-                 "Not yet hosted — add a URL once deployed to light up the live health dot.",
+                 "identifying scam / phishing emails, texts, and calls. Static HTML tool "
+                 "in the Good Kid Tech curriculum, hosted on GitHub Pages "
+                 "(repo: polyfilai-lab/goodkidtech). Source: "
+                 "/Users/jordanyoung/Documents/GoodKidTech/spot-the-scam/.",
     },
 
     # ── Jordan (Portfolio) ──────────────────────────────────────────────────
