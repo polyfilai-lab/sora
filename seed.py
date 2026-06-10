@@ -81,7 +81,23 @@ SEED_PROJECTS = [
             "Macro Scout",
             "My Texas House",
             "Better Homes & Gardens",
+            "Planogram Studio",
         ],
+    },
+    {
+        "company": "Fairfield Processing",
+        "name": "Planogram Studio",
+        "tagline": "Cross-brand pillow shelf builder — lookbooks, favorites, Walmart Store View",
+        "status": "live",
+        "url": "https://web-production-07600.up.railway.app/planogram",
+        "notes": "Standalone merchandising destination inside Cortex: brand lookbooks "
+                 "(My Texas House, Better Homes & Gardens, Mainstays coming soon) with "
+                 "♥-favorites and click-to-zoom, plus a drag-and-drop shelf planogram "
+                 "builder (fixture/shelves/facings/sizing, capacity readout, PNG export) "
+                 "and a Store View PDF that renders the build on a Walmart gondola. "
+                 "Basic Auth (Cortex login) required.",
+        "sub_tools": ["MTH Lookbook", "BHG Lookbook", "Planogram Builder",
+                      "Store View PDF", "Mainstays (coming soon)"],
     },
     {
         "company": "Fairfield Processing",

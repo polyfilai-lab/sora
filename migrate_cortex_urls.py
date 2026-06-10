@@ -68,6 +68,11 @@ CORTEX_SUB_TOOLS = [
         "path": "/better-homes-gardens",
         "tagline": "BHG gallery & program assets",
     },
+    {
+        "name": "Planogram Studio",
+        "path": "/planogram",
+        "tagline": "Cross-brand pillow shelf builder — lookbooks, favorites, Walmart Store View",
+    },
 ]
 
 

@@ -336,6 +336,7 @@ POLYPETS_PROJECT_URLS = {
     "Bumbleton":  f"{POLYPETS_BASE_URL}/bumbleton",
     "MoonMeadow": f"{POLYPETS_BASE_URL}/moonmeadow",
 }
+CORTEX_BASE_URL = "https://web-production-07600.up.railway.app"
 
 
 def _run_idempotent_migrations():
@@ -417,6 +418,64 @@ def _run_idempotent_migrations():
             sts["updated_at"] = now
             changed = True
             print("[sora] migration: set 'Spot the Scam' → live + Pages URL", flush=True)
+
+        # M4 — Planogram Studio: Fairfield's standalone cross-brand
+        # merchandising tool inside Cortex (built 2026-06-09/10). Ensure it
+        # exists as a first-class project under Fairfield Processing (matched
+        # by NAME — prod volume ids differ from local) AND that the Cortex
+        # project lists it as a sub-tool. Idempotent: adds once, then only
+        # corrects url/status drift.
+        PLANOGRAM_URL = f"{CORTEX_BASE_URL}/planogram"
+        PG_TAGLINE = "Cross-brand pillow shelf builder — lookbooks, favorites, Walmart Store View"
+        PG_NOTES = ("Standalone merchandising destination inside Cortex: brand lookbooks "
+                    "(My Texas House, Better Homes & Gardens, Mainstays coming soon) with "
+                    "♥-favorites and click-to-zoom, plus a drag-and-drop shelf planogram "
+                    "builder (fixture width, shelves, facings, per-shelf sizing, capacity "
+                    "readout, PNG export) and a Store View PDF that renders the build on a "
+                    "Walmart gondola — steel uprights, wire decks, price rail, and each "
+                    "brand's corrugate trays. 168 MTH cut-outs committed in-repo; BHG "
+                    "cut-outs extracted at runtime from the volume boards. Basic Auth "
+                    "(Cortex login) required.")
+        pg = next((p for p in data["projects"] if p.get("name") == "Planogram Studio"), None)
+        if pg is None:
+            fairfield = next(
+                (c for c in data["companies"]
+                 if c["name"].strip().lower() == "fairfield processing"),
+                None,
+            )
+            data["projects"].append({
+                "id":          store.new_id("p_"),
+                "company_id":  fairfield["id"] if fairfield else None,
+                "name":        "Planogram Studio",
+                "tagline":     PG_TAGLINE,
+                "status":      "live",
+                "url":         PLANOGRAM_URL,
+                "tokens_used": 0,
+                "notes":       PG_NOTES,
+                "changelog":   [],
+                "ideas":       [],
+                "sub_tools":   ["MTH Lookbook", "BHG Lookbook",
+                                "Planogram Builder", "Store View PDF",
+                                "Mainstays (coming soon)"],
+                "created_at":  now,
+                "updated_at":  now,
+            })
+            changed = True
+            print("[sora] migration: added Fairfield 'Planogram Studio' project (live)", flush=True)
+        elif pg.get("url") != PLANOGRAM_URL or pg.get("status") != "live":
+            pg["url"] = PLANOGRAM_URL
+            pg["status"] = "live"
+            pg["updated_at"] = now
+            changed = True
+            print("[sora] migration: set 'Planogram Studio' → live + Cortex URL", flush=True)
+
+        # …and surface it on the Cortex card's sub-tools list.
+        cortex = next((p for p in data["projects"] if p.get("name") == "Cortex"), None)
+        if cortex is not None and "Planogram Studio" not in (cortex.get("sub_tools") or []):
+            cortex.setdefault("sub_tools", []).append("Planogram Studio")
+            cortex["updated_at"] = now
+            changed = True
+            print("[sora] migration: added 'Planogram Studio' to Cortex sub-tools", flush=True)
 
         if changed:
             store.save(data)
